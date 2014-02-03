@@ -1,0 +1,52 @@
+#!/bin/bash
+
+function pcsGetHtml() {
+	## The following loop tries to get the HTML until wget exits
+	## successfully. Therefore we have to enter the loop with an
+	## unsuccessfull exit code, produced by false.
+	false
+	
+	## To secure the password use
+	## ENCODED=$(echo -n "value to encode" | \
+	## perl -pe's/(.)/sprintf("\\%03o", ord($1))/seg'); \
+	## echo echo \$\'$ENCODED\'
+	while [ "$?" -ne 0 ]
+	do
+		wget -O - --quiet --user=admin \
+		"--password=$(base64 -d ~/.pcs)" \
+		"http://192.168.1.1/setup.cgi?todo=nbtscan&next_file=devices.htm"
+	done
+}
+
+if [ ! -f ~/.pcs ] ; then
+	echo "ERROR: No password in ~/.pcs found (base64 encoded)"
+fi
+
+## Print a loading message while loading the HTML.
+waitMsg="Loading..."
+echo -n "${waitMsg}"
+
+## Load the HTML into a local variable.
+html="$(pcsGetHtml)"
+
+## Remove the waiting message by putting the coursor to the
+## line begin.
+echo -ne "\033[${#waitMsg}D"
+
+## Print the table head
+echo '      IP      │        MAC        │ Name          '
+echo '──────────────┼───────────────────┼───────────────'
+
+## Process the HTML data and print the resulting table rows
+## by doing the following steps:
+## 1) Find the interesting informations (in bold)
+## 2) Remove line feeds for processing
+## 3) Find the information tribles and put them in columns
+## 4) Remove the line containing the orginal table header
+## 5) Sort the columns by IP
+echo "${html}" | \
+grep '<b>' | \
+tr -d '\n' | \
+perl -p -e 's#.*?<b>(.*?)<.*?<b>(.*?)<.*?<b>(.*?)<# $1 │ $3 │ $2\n#g' | \
+head -n-1 | \
+sort

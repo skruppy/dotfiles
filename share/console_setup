@@ -1,0 +1,6 @@
+[[ $- != *i* ]] && return
+
+export DOT_DIR="$(cat "$HOME/.dotdir")"
+
+source "$DOT_DIR/share/bash_promt"
+source "$DOT_DIR/share/aliases"

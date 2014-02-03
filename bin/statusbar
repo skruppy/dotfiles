@@ -1,0 +1,114 @@
+#!/usr/bin/python
+
+import sys
+from subprocess import PIPE, Popen, check_output
+
+
+
+## Call a process (with arguments) an return it's cleand STDOUT output
+def sh(args):
+	return check_output(args).decode("UTF-8")[:-1]
+
+
+
+def createBlock(name, instance, color, text):
+	return '{"name":"%s","instance":"%s","color":"#%s","full_text":"%s"}' % \
+		(name, instance, color, text)
+
+
+
+def createBlockBacklight():
+	output = sh(["/usr/bin/xbacklight", "-get"]).split(".")[0]
+	return createBlock("backlight", "bkl0", "FFFFFF", "☀ "+output)
+
+
+
+def createBlockVolume():
+	output = sh(["pacmd", "dump"]).split("\n")
+	output.reverse()
+	
+	state = 0
+	
+	for line in output:
+		
+		if len(line) == 0:
+			continue
+		
+		parts = line.split()
+		
+		if parts[0] == "set-default-sink":
+			device = parts[1]
+		
+		elif parts[0] == "set-sink-mute" and parts[1] == device:
+			mute = (parts[2] == "yes")
+			state |= 1
+			if state == 3:
+				break
+		
+		elif parts[0] == "set-sink-volume" and parts[1] == device:
+			volume = parts[2]
+			state |= 2
+			if state == 3:
+				break
+	
+	if state != 3:
+		color = "FF0000"
+		msg = "???"
+	elif mute:
+		color = "FFFFFF"
+		msg = "mute"
+	else:
+		color = "FFFF00"
+		msg = "%i%%" % (int(volume, 0) * 100 / 65535)
+	
+	return createBlock("sound", "snd0", color, "♫ "+msg)
+
+
+
+def printLine(message):
+	sys.stdout.write(message)
+	sys.stdout.flush()
+
+
+
+def getI3StatusLine():
+	global i3statusProcess
+	
+	try:
+		line = i3statusProcess.stdout.readline()
+		
+		## Exit because the i3status process has terminated
+		if len(line) == 0:
+			sys.exit()
+		
+		return line.decode("UTF-8")
+	
+	## Exit because the user hit ctrl-c
+	except KeyboardInterrupt:
+		sys.exit()
+
+
+
+i3statusProcess = Popen('/usr/bin/i3status', stdout=PIPE)
+
+## Path the first two lines through. They contain the version information and
+## open the JSON array.
+printLine(getI3StatusLine())
+printLine(getI3StatusLine())
+
+## No colon precedes the first line of actual data. To avoid special "first line
+## handling" in the main loop, we send a fake empty data line and fix the
+## missing prepending colon by adding one.
+printLine("[]\n")
+line = ","+getI3StatusLine()
+
+while True:
+	line = ",".join([
+		createBlockBacklight(),
+		createBlockVolume(),
+		line[2:]  ## Remove the leading ",[" (we add it again in the next line)
+	])
+	
+	printLine(",["+line)
+	
+	line = getI3StatusLine()

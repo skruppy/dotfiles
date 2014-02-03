@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -e
+
+LATEX=pdflatex
+
+
+function compile() {
+	$LATEX -interaction=nonstopmode "$1" | \
+	awk 'BEGIN{repltext=sprintf("%c[1;31;40m&%c[0m", 0x1B,0x1B);}{gsub("^(!.*)",repltext); print}'
+}
+
+
+if [ "$#" -eq "0" ] ; then
+	fileCnt=$(find -maxdepth 1 -type f -name '*.tex' | wc -l)
+	
+	if [ $fileCnt == 1 ] ; then
+		compile "$(find -maxdepth 1 -type f -name '*.tex' -exec)"
+	else
+		echo "ERROR: Sorry, I don't know which file to compile, there are $fileCnt.">&2
+		echo "Please give me one as an argument.">&2
+		exit 1
+	fi
+elif [ "$#" -eq "1" ] ; then
+	compile "$1"
+else
+	echo "Usage: $0 [file]" >&2
+	echo "  compiles the first or only *.tex file using $LATEX" >&2
+	exit 1
+fi

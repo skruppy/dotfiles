@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -e
+
+
+## Set the pwd to the project root, so we can savely use relative path names
+cd "$(dirname "$0")/.."
+export DOT_DIR="$(pwd)"
+echo "$DOT_DIR" >"$HOME/.dotdir"
+
+export PATH="$DOT_DIR/bin:$PATH"
+
+cd dotfiles
+find -type f | cut -c 3- | while read file ; do
+	DST="$HOME/.$file"
+	mkdir -p "$(dirname "$DST")"
+	cp "$file" "$DST"
+done
+
+sed -i -e "s#--DOT_DIR--#$DOT_DIR#" "$HOME/.i3status.conf"
+sed -i -e "s#--DOT_DIR--#$DOT_DIR#" "$HOME/.i3/config"
+ln -fs "$DOT_DIR/share/console_setup" "$HOME/.profile" ## interactive & login
+ln -fs "$DOT_DIR/share/console_setup" "$HOME/.bashrc"  ## interactive & not login
+
+nanorc update

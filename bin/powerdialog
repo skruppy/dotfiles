@@ -1,0 +1,91 @@
+#!/usr/bin/python
+
+import sys
+from PyQt4 import QtGui, QtCore, Qt
+import os
+
+
+class PowerDialog(QtGui.QDialog):
+
+	def __init__(self):
+		super(PowerDialog, self).__init__()
+		self.initUI()
+	
+	def addButton(self, text, function, icon):
+		btnHalt = QtGui.QToolButton(self)
+		btnHalt.setText(text)
+		btnHalt.clicked.connect(function)
+		btnHalt.setIcon(QtGui.QIcon('/usr/share/icons/'+icon))
+		btnHalt.setIconSize(QtCore.QSize(self.iconSize, self.iconSize))
+		btnHalt.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
+		btnHalt.resize(self.btWidth, self.btHeight)
+		btnHalt.move(self.x, self.btMargin)
+		self.x += self.btWidth + self.btMargin
+	
+	def initUI(self):
+		self.btWidth = 82
+		self.btHeight = 70
+		self.btMargin = 16
+		self.iconSize = 40
+		
+		self.x = self.btMargin
+		self.addButton('&Shutdown', self.halt,    'oxygen/48x48/actions/system-shutdown.png')
+		self.addButton('&Restart',  self.restart, 'oxygen/48x48/actions/system-reboot.png')
+		self.addButton('To R&AM',   self.toRam,   'oxygen/48x48/actions/system-suspend.png')
+		self.addButton('To H&DD',   self.toHdd,   'oxygen/48x48/actions/system-suspend-hibernate.png')
+		self.addButton('&Lock',      self.lock,    'oxygen/48x48/actions/system-lock-screen.png')
+		self.addButton('&Nothing',  self.close,   'oxygen/48x48/actions/application-exit.png')
+		
+		
+		self.setFixedSize(self.x, self.btHeight + 2*self.btMargin)
+		self.center()
+		
+		self.setWindowTitle('Change power state')    
+		self.show()
+
+
+	def halt(self):
+		self.execute("sudo /sbin/shutdown -h now")
+	
+	
+	def restart(self):
+		self.execute("sudo /sbin/shutdown -r now")
+	
+	
+	def toRam(self):
+		self.execute("sudo /usr/sbin/pm-suspend")
+	
+	
+	def toHdd(self):
+		self.execute("sudo /usr/sbin/pm-hibernate")
+	
+	
+	def lock(self):
+		self.execute("/usr/bin/i3lock -d")
+	
+	
+	def close(self):
+		QtCore.QCoreApplication.instance().quit()
+	
+	
+	def execute(self, cmd):
+		print("Executing '%s'" % cmd)
+		os.system(cmd)
+		self.close()
+	
+	
+	def center(self):
+		qr = self.frameGeometry()
+		cp = QtGui.QDesktopWidget().availableGeometry().center()
+		qr.moveCenter(cp)
+		self.move(qr.topLeft())
+
+
+def main():
+	app = QtGui.QApplication(sys.argv)
+	pd = PowerDialog()
+	sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+	main()

@@ -1,0 +1,29 @@
+set tabstop=4
+set shiftwidth=4
+set autoindent
+
+set number
+
+set scrolloff=6
+
+set hlsearch
+
+" highlight tabs
+set listchars=tab:→\ 
+highlight SpecialKey guifg=#4a4a59 ctermfg=8
+:set list
+nmap <leader>l :exec &listchars == "tab:  " ? "set listchars=tab:→\\ " : "set listchars=tab:\\ \\ "<CR>
+
+" Syntax highlithing
+syntax on
+filetype plugin on
+
+" 80 colums margin
+vertical resize 81
+set colorcolumn=81
+
+
+" For vimdiff
+if &diff
+	colorscheme elflord
+endif

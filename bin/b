@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -e
+
+if [ "$#" -eq "0" ] ; then
+	echo "$0 path [path ...]" >&2
+	echo "  create a backup of the specified files or directories, by appending .bak" >&2
+	exit 1
+fi
+
+
+for B_PATH in "$@" ; do
+	B_PATH="$(echo "$B_PATH" | sed 's#/*$##')"
+	
+	if [ -e "$B_PATH.bak" ] ; then
+		echo "$B_PATH.bak already exists">&2
+		fail=yes
+	fi
+done
+
+if [ -n "$fail" ] ; then
+	echo "Failed!" >&2
+	exit 1
+fi
+
+for B_PATH in "$@" ; do
+	B_PATH="$(echo "$B_PATH" | sed 's#/*$##')"
+	cp -R "$B_PATH" "$B_PATH.bak" || return $?
+done

@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -e
+
+RC="$HOME/.nanorc"
+URL="https://nanosyntax.googlecode.com/svn/trunk/syntax-nanorc/"
+
+case "$1" in
+	"help"|"h"|"--help"|"-h"|"")
+		echo "Usage: $0 [download] [update] [\$location]"
+		echo ""
+		echo "  default location: /usr/share/nano/"
+		echo "  At least one action, download or update, has to be set."
+		echo "  The syntax definition source is"
+		echo "    $URL"
+		exit 1
+	;;
+esac
+
+if [ "$1" = "download" ] ; then
+	DO_DOWNLOAD="y"
+	shift
+fi
+
+if [ "$1" = "update" ] ; then
+	DO_UPDATE="y"
+	shift
+fi
+
+DIR="$(readlink -f "${1:-/usr/share/nano/}")"
+
+if [ "$DO_DOWNLOAD" = "y" ] ; then
+	wget \
+		--no-verbose \
+		--recursive \
+		--no-host-directories \
+		--cut-dirs=3 \
+		--no-parent \
+		--reject="index.html*" \
+		-P "$DIR" \
+		"$URL" 
+	
+	## Fix etcportage.nanorc
+	sed -i -e 's/^Code:.*//' "$DIR/etcportage.nanorc"
+fi
+
+
+if [ "$DO_UPDATE" = "y" ] ; then
+	{
+		test -f "$RC" && grep -vE '^[[:space:]]*include[[:space:]]' "$RC"
+		find "$DIR" -maxdepth 1 -type f -name '*.nanorc' -printf 'include "%p"\n'
+	} >"$RC.new" && mv "$RC.new" "$RC"
+fi

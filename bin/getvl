@@ -1,0 +1,64 @@
+#!/bin/bash
+
+set -e
+
+
+if [ "$#" -ne "2" ] ; then
+	echo "$0 url dst" >&2
+	echo "  given a Unterrichtsmitschau link, this script downloads the slides an videos to dst" >&2
+	exit 1
+fi
+
+I=1
+
+## Create a folder for the slides
+if [ ! -d "$2" ] ; then
+	mkdir "$2"
+fi
+
+## Get the cookies
+wget \
+	--quiet \
+	--output-document=/dev/null \
+	--keep-session-cookies \
+	--save-cookies="$2.cookie" \
+	"$1"
+
+## Assemble the slides URL
+SLIEDES="$(echo -n "$1/slides/" | sed 's#node#pdl/files/videoonline/data#')"
+
+## Download the stream
+rtmpdump \
+	--swfVfy "http://videoonline.edu.lmu.de/sites/all/modules/sessionsimple/flash/player-licensed.swf"  \
+	--pageUrl "http://videoonline.edu.lmu.de" \
+	--rtmp "rtmp://flash5.lrz-muenchen.de:1935/Mitschau/$( \
+		wget \
+			--quiet \
+			--output-document=- \
+			--load-cookies="$2.cookie" \
+			"$1/bandwidth.rss" | \
+		grep --only-matching --extended-regexp '<media:content[^>]*>' | \
+		sort --field-separator='"' --key=6 --numeric-sort --reverse | \
+		head --lines=1 | \
+		cut --delimiter='"' --fields=2)" \
+	--flv "$2.flv"
+
+## Download the slides
+while wget \
+	--quiet \
+	--output-document="$2/$(printf "%03i.png" $I)" \
+	--load-cookies="$2.cookie" \
+	"$SLIEDES$(printf "Folie%02i.png" $I )" ; \
+do \
+	## Remove alpha channel (put image in white background)
+	convert \
+		"$2/$(printf "%03i.png" $I)" \
+		-background white \
+		-flatten \
+		"$2/$(printf "%03i.png" $I)"
+	
+	## Increment counter (get next image)
+	I=$(( $I + 1 ))
+done
+
+rm "$2.cookie" "$2/$(printf "%03i.png" $I)"

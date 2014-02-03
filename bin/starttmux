@@ -1,0 +1,102 @@
+#!/bin/sh
+
+
+## This script starts tmux.
+##  * If there are multiple tmux sessions, the script drops you to a shell and
+##    won't connect to a random session (therefore, you can't have some hidden
+##    ones by accident.
+##  * On each connect, detached mosh sessions are getting killed
+##  * You can connect from multiple clients to the same session, as long as all
+##    are currently connected. This obviates the need for the mosh/tmux hack:
+##    "attach -d"
+##  * invoking remote commands via "ssh host command" or "mosh host command"
+##    is still possible. Therefore things like scp are also still usable.
+## 
+## INSTALL
+## prepend the line of your public key in ~/.ssh/authorized_keys with
+## command="~/starttmux" and a white space afterwards.
+
+
+log() {
+	echo "$1" >>ssh-org.log
+}
+
+
+log ""
+log "## $(date)"
+log "Called script: $0"
+
+
+## ssh has been called to run a remote command (e.g. ssh host command).
+## such a request passes through transparently, except for mosh-server
+## commands. mosh-server commands are normally issued by calling mosh on the
+## remote side. But if mosh itself should run a remote command, it will be
+## passed through again transparently.
+if [ ! -z "$SSH_ORIGINAL_COMMAND" ]
+then
+	log "SSH command: $SSH_ORIGINAL_COMMAND"
+	
+	case "$SSH_ORIGINAL_COMMAND" in
+		"mosh-server "*"'--'"*)
+			log "found mosh with remote command"
+			CMD="$SSH_ORIGINAL_COMMAND"
+			;;
+		"mosh-server "*)
+			log "found mosh"
+			CMD="$SSH_ORIGINAL_COMMAND '--' '$0'"
+			;;
+		*)
+			log "found unknown remote command"
+			CMD="$SSH_ORIGINAL_COMMAND"
+			;;
+	esac
+	unset "SSH_ORIGINAL_COMMAND"
+	
+	log "starting: $CMD"
+	eval "exec $CMD"
+	
+	## Survivors will be shot, again!
+	log "SURVIVED (not good)"
+	exit 1
+fi
+
+
+## If we are inside a tmux session, we obviously won't start an other one
+## or attach to an existing one. Therefore we are contented with killing
+## all detached mosh sessions.
+if [ ! -z "$TMUX" ]
+then
+	echo "tmux found, killing detached mosh sessions"
+	log  "tmux found, killing detached mosh sessions"
+	
+	who | \
+	sed -n "s/^$USER [^(]*(mosh \[\([0-9][0-9]*\)])/\1/p" | \
+	xargs --no-run-if-empty kill
+	
+	exit 0
+fi
+
+
+## If we came this far, we get rewarded with an attached tmux session, but only
+## if this would be the only tmux session for the user on this machine.
+## Otherwise we drop to a shell and ask the user to fix up the mess.
+sessionCnt="$(tmux list-sessions 2>/dev/null | wc -l)"
+
+if [ "$sessionCnt" -eq 1 ]
+then
+	log "attaching to tmux"
+	exec tmux -u attach \; new-window "$0"
+elif [ "$sessionCnt" -eq 0 ]
+then
+	log "initializing new tmux session"
+	exec tmux -u new-window "$0"
+else
+	log "multiple tmux sessions, starting {$SHELL:-/bin/sh}"
+	
+	echo "The list of tmux sessions is ambiguous. You have to fix this manually"
+	echo "(hint: tmux attach -t <session #>)"
+	echo ""
+	tmux list-sessions
+	
+	exec "{$SHELL:-/bin/sh}"
+fi

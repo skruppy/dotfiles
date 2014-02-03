@@ -1,0 +1,6 @@
+set morespace
+set fill 1048576
+set const
+set nonewlines
+set softwrap
+set tabsize 4

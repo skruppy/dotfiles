@@ -1,0 +1,37 @@
+!! Colors
+URxvt*foreground: White
+URxvt*background: Black
+
+
+!! Font
+!URxvt*font: xft:DejaVu Sans Mono:pixelsize=12:antialias=true:hinting=true
+!URxvt*boldFont: xft:DejaVu Sans Mono:bold:pixelsize=12:antialias=true:hinting=true
+
+URxvt*font: xft:Bitstream Vera Sans Mono:pixelsize=12:antialias=true:hinting=true
+URxvt*boldFont: xft:Bitstream Vera Sans Mono:bold:pixelsize=12:antialias=true:hinting=true
+
+!URxvt*font: xft:Liberation Mono:pixelsize=13:antialias=true:hinting=true
+!URxvt*boldFont: xft:Liberation Mono:bold:pixelsize=13:antialias=true:hinting=true
+
+!URxvt*font: xft:terminus:pixelsize=15
+!URxvt*boldFont: xft:terminus:bold:pixelsize=15
+
+!URxvt*font:-*-courier-medium-r-normal-*-14-*-*-*-*-*-iso8859-1
+!URxvt*boldFont:-*-courier-bold-r-normal-*-14-*-*-*-*-*-iso8859-1
+
+
+!! Scrollbar
+!! can be: rxvt (default), plain (most compact), next, or xterm
+URxvt*scrollstyle: plain
+
+
+!! Icon
+URxvt*iconFile: /usr/share/icons/oxygen/16x16/apps/utilities-terminal.png
+URxvt*urgentOnBell: true
+
+!! Open in browser
+URxvt*perl-ext-common:  default,matcher
+URxvt*url-launcher:      /usr/bin/opera
+URxvt*matcher.button:   1
+URxvt*matcher.pattern.1:  \\B(/\\S+?):(\\d+)(?=:|$)
+URxvt*matcher.launcher.1: kate -l $2 $1

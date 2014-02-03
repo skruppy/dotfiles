@@ -1,0 +1,58 @@
+#!/bin/bash
+
+## s lmu -L 8080:proxy1.ub.uni-muenchen.de:8080
+
+set -e
+
+export http_proxy="localhost:8080"
+csv="$1"
+title="$2"
+
+
+## Test aruments count
+if [ "$#" -ne "2" ]
+then
+	echo "Error: Invalid arguments" >&2
+	echo "$0 <export.csv> <book name>" >&2
+	exit 1
+fi
+
+
+## Test file for correct export file
+if ! head -1 "$csv" | grep -q 'Content Type,Name,DOI,OpenURL,Direct Link' ; then
+	echo "Error: $csv doesnt look like an springerlink export with all options enabled." >&2
+	exit 2
+fi
+
+
+## Get the chapters
+tail -n+2 "$csv" |
+while read line ; do
+	url="$(echo "$line" | cut -d ',' -f5)/fulltext.pdf"
+	file="$(echo "$line" | cut -d ',' -f3 | cut -d '_' -f2 | xargs printf "$title-%02i.pdf")"
+	wget -nv -O "$file" "$url"
+done
+
+
+## Get the front and back matters
+id="$(head -2 "$csv" | tail -1 |  cut -d, -f3 | sed -e 's/[^\/]*\/\([^_]*\).*/\1/')"
+
+for type in front-matter back-matter ; do
+	url="http://www.springerlink.com/content/$id/$type.pdf"
+	file="$title-$type.pdf"
+	wget -nv -O "$file" "$url"
+done
+
+
+## Merge everything to one pdf
+echo -n "Merging ..."
+gs \
+	-dBATCH \
+	-dNOPAUSE \
+	-q \
+	-sDEVICE="pdfwrite" \
+	-sOutputFile="$title.pdf" \
+	"$title-front-matter.pdf" \
+	"$title-[0-9]*.pdf" \
+	"$title-back-matter.pdf"
+echo "done"

@@ -1,0 +1,9 @@
+!! Swap caps lock with escape
+!remove Lock = Caps_Lock
+!keysym Caps_Lock = Escape
+!keysym Escape = Caps_Lock
+!add Lock = Caps_Lock
+
+!! Make caps lock an additional shift key (convinient for small keyboards)
+remove Lock = Caps_Lock
+keysym Caps_Lock = Shift_L
