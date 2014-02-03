@@ -22,5 +22,6 @@ sed -i -e "s#--DOT_DIR--#$DOT_DIR#" "$HOME/.i3/config"
 sed -i -e "s#--DOT_DIR--#$DOT_DIR#" "$HOME/.xbindkeysrc"
 ln -fs "$DOT_DIR/share/console_setup" "$HOME/.profile" ## interactive & login
 ln -fs "$DOT_DIR/share/console_setup" "$HOME/.bashrc"  ## interactive & not login
+ln -fs "$DOT_DIR/share/console_setup" "$HOME/.zshenv"  ## allways
 
 nanorc update

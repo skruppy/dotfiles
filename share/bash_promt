@@ -2,14 +2,16 @@
 # This script creates a fancy promt for bash.
 # To try it out, use "source promt.sh"
 
+sh="$(ps -p $$ -o comm=)"
+
 function __git_ps1 {
 	# Do nothing, so no error will occur on systems without git
 	true
 }
 
-if [ -f /usr/share/git/completion/git-completion.bash ]
+if [ -f "/usr/share/git/completion/git-completion.$sh" ]
 then
-	source /usr/share/git/completion/git-completion.bash
+	source "/usr/share/git/completion/git-completion.$sh"
 	GIT_PS1_SHOWDIRTYSTATE=yep
 	GIT_PS1_SHOWSTASHSTATE=yep
 fi
@@ -25,7 +27,8 @@ function commpilePromt {
 		pFill="$(perl -e "print('─'x${pRemainingSpace});")"
 		
 		# Define the "normal" promt
-		PS1="${pNotice}${pLeftPart}${pFill}${pRightPart}\n${pLineC}└─${pPromtC}>>${pNormalC} "
+		PS1="${pNotice}${pLeftPart}${pFill}${pRightPart}
+${pLineC}└─${pPromtC}>>${pNormalC} "
 		return 0
 	else
 		# If we haven't enough space left, return unsuccessfully
@@ -35,7 +38,7 @@ function commpilePromt {
 
 
 
-function createPromt {
+function precmd {
 	# == Create a notice if last command failed
 	local returncode=$?
 	
@@ -45,8 +48,8 @@ function createPromt {
 	then
 		pNotice="${pLineC}"
 	else
-		pNotice="$(echo -ne "${pFailedNoticeC}The last command FAILED" \
-			"with the exit code ${returncode}\n${pLineC}")"
+		pNotice="${pFailedNoticeC}The last command FAILED with the exit code ${returncode}
+${pLineC}"
 	fi
 	
 	
@@ -89,11 +92,11 @@ function createPromt {
 	pLeftPart="${pLineC}┌───────┤${pHostC} ${pHost} ${pLineC}├───────┤${pPwdC} ${pwd}${git} ${pLineC}├"
 	pRightPart="───────┤${pTimeC} ${time} ${pLineC}├────"
 	
-	commpilePromt 77 && return 0
+	commpilePromt 49 && return 0
 	
 	# ---- 2. try: no clock
 	pRightPart=""
-	commpilePromt 55 && return 0
+	commpilePromt 27 && return 0
 	
 	# ---- 3. try: only hostname
 	if [ -x /bin/hostname ]
@@ -103,16 +106,16 @@ function createPromt {
 		pHost="$(cut -d. -f1 /proc/sys/kernel/hostname)"
 	fi
 	pLeftPart="${pLineC}┌───────┤${pHostC} ${pHost} ${pLineC}├───────┤${pPwdC} ${pwd}${git} ${pLineC}├"
-	commpilePromt 55 && return 0
+	commpilePromt 27 && return 0
 	
 	# ---- 4. try: no git
 	git=0
 	pLeftPart="${pLineC}┌───────┤${pPwdC} ${pwd} ${pLineC}├"
-	commpilePromt 33 && return 0
+	commpilePromt 5 && return 0
 	
 	# ---- 5. try: only pwd
 	pLeftPart="${pLineC}┌───────┤${pPwdC} ${pwd} ${pLineC}├"
-	commpilePromt 33 && return 0
+	commpilePromt 5 && return 0
 	
 	# ---- 7. try: fall back, no graphical gimmicks
 	pLeftPart="${pPwdC}${pwd}"
@@ -130,17 +133,17 @@ function createPromt {
 # == colors
 # ---- define
 
-pNormalC=$(echo -e "\[\033[m\]")
-pLineC=$(echo -e "\[\033[0;36m\]")
-pRootC=$(echo -e "\[\033[1;31m\]")
-pRemoteC=$(echo -e "\[\033[1;35m\]")
-pUserC=$(echo -e "\[\033[1;32m\]")
-pTextC=$(echo -e "\[\033[1;33m\]")
+pNormalC=$(echo -e "\033[m")
+pLineC=$(echo -e "\033[0;36m")
+pRootC=$(echo -e "\033[1;31m")
+pRemoteC=$(echo -e "\033[1;35m")
+pUserC=$(echo -e "\033[1;32m")
+pTextC=$(echo -e "\033[1;33m")
 pHostLocalC=$pTextC
 pHostRemoteC=$pRemoteC
 pPwdC=$pTextC
 pTimeC=$pTextC
-pFailedNoticeC=$(echo -e "\[\033[1;31m\]")
+pFailedNoticeC=$(echo -e "\033[1;31m")
 
 
 # ---- select depending on user
@@ -155,13 +158,17 @@ fi
 
 # == The rest of definitions
 
-# check the window size after each command and, if necessary,
-# update the values of LINES and COLUMNS.
-shopt -s checkwinsize
-
-# Prevent that multiple bash instances overwrite the readline history of each
-# other.
-shopt -s histappend
+case "$sh" in
+	"bash")
+		# check the window size after each command and, if necessary,
+		# update the values of LINES and COLUMNS.
+		shopt -s checkwinsize
+		
+		# Prevent that multiple bash instances overwrite the readline history of each
+		# other.
+		shopt -s histappend
+		;;
+esac
 
 export HISTCONTROL=ignoredups,erasedups
 export HISTSIZE=2000
@@ -169,7 +176,7 @@ export HISTFILESIZE=2000
 
 
 # This function will be called before PS1 is evaluated
-PROMPT_COMMAND=createPromt
+PROMPT_COMMAND=precmd
 
 # Define the promt for multi line commands
 PS2="  ${pPromtC}>>${pNormalC} "
