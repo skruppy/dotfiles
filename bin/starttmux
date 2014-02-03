@@ -37,7 +37,7 @@ then
 	log "SSH command: $SSH_ORIGINAL_COMMAND"
 	
 	case "$SSH_ORIGINAL_COMMAND" in
-		"mosh-server "*"'--'"*)
+		"mosh-server "*" '--'"*)
 			log "found mosh with remote command"
 			CMD="$SSH_ORIGINAL_COMMAND"
 			;;
@@ -64,22 +64,19 @@ fi
 ## If we are inside a tmux session, we obviously won't start an other one
 ## or attach to an existing one. Therefore we are contented with killing
 ## all detached mosh sessions.
+who | \
+sed -n "s/^$USER [^(]*(mosh \[\([0-9][0-9]*\)])/\1/p" | \
+xargs --no-run-if-empty kill
+
 if [ ! -z "$TMUX" ]
 then
-	echo "tmux found, killing detached mosh sessions"
-	log  "tmux found, killing detached mosh sessions"
-	
-	who | \
-	sed -n "s/^$USER [^(]*(mosh \[\([0-9][0-9]*\)])/\1/p" | \
-	xargs --no-run-if-empty kill
-	
 	exit 0
 fi
 
 
-## If we came this far, we get rewarded with an attached tmux session, but only
-## if this would be the only tmux session for the user on this machine.
-## Otherwise we drop to a shell and ask the user to fix up the mess.
+## start a new or an attach to an existing tmux session, but only if this would
+## be the only tmux session for the user on this machine. Otherwise we drop to a
+## shell and ask the user to fix up the mess.
 sessionCnt="$(tmux list-sessions 2>/dev/null | wc -l)"
 
 if [ "$sessionCnt" -eq 1 ]
