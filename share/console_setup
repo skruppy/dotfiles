@@ -1,3 +1,13 @@
+case "$(hostname -d)" in
+	"fs.lmu.de"|*".fs.lmu.de")
+		umask 0007
+		;;
+	"cip.ifi.lmu.de")
+		unalias rm
+		umask 077
+		;;
+esac
+
 [[ $- != *i* ]] && return
 
 export DOT_DIR="$(cat "$HOME/.dotdir")"
