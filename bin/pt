@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -e
+
+ps -fHN --ppid=2 | grep -vE "^root         2"

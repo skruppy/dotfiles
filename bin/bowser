@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+
+SOCKS_SERVER=localhost:8080 chromium &
+browserPid="$!"
+
+ssh -D 8080 -N gaf &
+sshPid="$!"
+
+wait "$browserPid"
+kill "$sshPid"

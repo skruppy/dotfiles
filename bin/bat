@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -e
+
+if [ -d /sys/class/power_supply/BAT1 ]
+then
+	cNow="$(cat /sys/class/power_supply/BAT1/charge_now)"
+	cMax="$(cat /sys/class/power_supply/BAT1/charge_full)"
+	
+	cPer="$(( $cNow * 100 / $cMax ))"
+	
+	if [[ "$cPer" -gt 100 ]]
+	then
+		cPer=100
+	fi
+	
+	echo "$cPer%"
+else
+	echo "--"
+fi

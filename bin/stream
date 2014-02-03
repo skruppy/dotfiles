@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -e
+
+cvlc \
+	-vvv \
+	pulse://alsa_output.usb-0d8c_C-Media_USB_Headphone_Set-00-Set.analog-stereo.monitor \
+	--sout '#rtp{port=1234,sdp=rtsp://:8080/test.sdp}'

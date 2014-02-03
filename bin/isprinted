@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -e
+
+for f in "$@"
+do
+	case "$(getfattr -n user.printed --only-values "$f" 2>/dev/null)" in
+		"printed")
+			echo "✓ $f" ;;
+		"")
+			echo "  $f" ;;
+		*)
+			echo "? $f" ;;
+	esac
+done
