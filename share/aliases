@@ -74,7 +74,7 @@ alias anki="anki -b /home/skrupellos/local/anki"
 alias setprinted="setfattr -n user.printed -v 'printed' "
 alias clearprinted="setfattr -x user.printed "
 
-if command -v mv >/dev/null
+if command -v gpg-agent >/dev/null && [ "$(hostname -f)" != "universe.homenet.org" ]
 then
 	if [ -f "$HOME/.gpg-agent-info" ] ; then
 		. "$HOME/.gpg-agent-info"
