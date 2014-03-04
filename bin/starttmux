@@ -66,6 +66,7 @@ fi
 ## all detached mosh sessions.
 who | \
 sed -n "s/^$USER [^(]*(mosh \[\([0-9][0-9]*\)])/\1/p" | \
+grep -v "$PPID" | \
 xargs --no-run-if-empty kill
 
 if [ ! -z "$TMUX" ]
@@ -82,11 +83,11 @@ sessionCnt="$(tmux list-sessions 2>/dev/null | wc -l)"
 if [ "$sessionCnt" -eq 1 ]
 then
 	log "attaching to tmux"
-	exec tmux -u attach \; new-window "$0"
+	exec tmux -u attach
 elif [ "$sessionCnt" -eq 0 ]
 then
 	log "initializing new tmux session"
-	exec tmux -u new-window "$0"
+	exec tmux -u
 else
 	log "multiple tmux sessions, starting {$SHELL:-/bin/sh}"
 	
