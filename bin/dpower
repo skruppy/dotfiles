@@ -1,0 +1,38 @@
+#!/bin/sh
+
+set -e
+
+## The last pipe command won't be forked (needed for read)
+shopt -s lastpipe
+
+## The commands are whitespace separated from the description
+dmenu \
+	-i \
+	-l 10 \
+	-p "Change power state" \
+	-nb "#ccc" \
+	-nf "#000" \
+	-sb "#f55" \
+	-sf "#fff" \
+	<<EOF | cut -f1 -d " " | read cmd
+none
+poweroff                        Shut down and power-off the system
+reboot                          Shut down and reboot the system
+suspend                         Suspend the system
+hibernate                       Hibernate the system
+hybrid-sleep                    Hibernate and suspend the system
+exit                            Request user instance exit
+lock                            Lock user instance
+EOF
+
+case "$cmd" in
+	"poweroff"|"reboot"|"suspend"|"hibernate"|"hybrid-sleep")
+		systemctl "$cmd"
+		;;
+	"exit")
+		i3-msg exit
+		;;
+	"lock")
+		i3lock
+		;;
+esac
