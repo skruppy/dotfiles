@@ -1,18 +1,53 @@
 #!/bin/bash -i
+## The script hast to be interpreted by a interactive bash, to get the alias
+## definitions, hence the -i
+## 
+## dmenu compatibility rules for aliases:
+##  * set enviroment variables via env (e.g. "env FOO=BAR prog")
+##  * don't use nested aliases (e.g. no "alias b=a ; alias c=b")
 
+set -e
+
+## By default. bash scripts won't use aliases, even if they are defiled.
+shopt -s expand_aliases
+
+## The last pipe command won't be forked (needed for read)
+shopt -s lastpipe
+
+
+## Determine the cache file location:
+##  1a) $XDG_CACHE_HOME/dmenu_run
+##  1b) ~/.cache/dmenu_run
+##  2)  ~/.dmenu_cache
 cachedir=${XDG_CACHE_HOME:-"$HOME/.cache"}
-if [ -d "$cachedir" ]; then
+if [ -d "$cachedir" ] ; then
 	cache=$cachedir/dmenu_run
 else
-	cache=$HOME/.dmenu_cache # if no xdg dir, fall back to dotfile in ~
+	cache=$HOME/.dmenu_cache
 fi
 
-shopt -s expand_aliases
-IFS=:
-if stest -dqr -n "$cache" $PATH; then
-	{ alias | cut -d '=' -f 1 | cut -d ' ' -f 2 ; stest -flx $PATH ; } | \
-	sort -u | tee "$cache" | dmenu "$@" | ${SHELL:-"/bin/sh"} &
+
+## Function used to reduce the scope of the IFS changes. See "man stest"
+secureStest() {
+	local IFS=:
+	stest "$@" $PATH
+}
+
+
+## Ask the user which programm to start.
+## Generate the command list if alt least one executables is newer than the
+## cache file, or otherwise use the cache file.
+if secureStest -dqr -n "$cache" ; then
+	{ alias | cut -d '=' -f 1 | cut -d ' ' -f 2 ; secureStest -flx ; } | \
+	sort -u | tee "$cache" | dmenu "$@" | read cmd
 else
-	dmenu "$@" < "$cache" | ${SHELL:-"/bin/sh"} &
+	dmenu "$@" < "$cache" | read cmd
 fi
 
+## If cmd is an alias, expand it and remove the quotes by echoing it
+if alias "$cmd" 1>/dev/null 2>&1 ; then
+	cmd="$(eval echo "$(alias "$cmd" | cut -d= -f2-)")"
+fi
+
+## Replace this bash instance by the command
+eval "exec $cmd"
