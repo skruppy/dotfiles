@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -e
+
+if [ "$#" -gt 2 -o "$#" -lt 1 -o "$2" = "-" ] ; then
+	echo "Usage: $0 URL [FILE]" >&2
+	echo "" >&2
+	echo "  downloads URL to FILE and saves URL in the extenden file attribute" >&2
+	echo "  'user.source'. It can retreved by 'remember FILE'" >&2
+	exit 1
+fi
+
+if [ "$#" -eq 1 ] ; then
+	FILE="$(basename "$1")"
+else
+	FILE="$2"
+fi
+
+wget -O "$FILE" "$1" 2>&1 | \
+tee /proc/self/fd/2 | \
+sed -n 's/^Saving to: ‘\(.*\)’$/\1/p' | \
+xargs --no-run-if-empty setfattr -n user.source -v "$1"

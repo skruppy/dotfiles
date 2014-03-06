@@ -1,0 +1,31 @@
+#!/bin/sh
+
+set -e
+
+printSrc() {
+	if [ ! -f "$2" ] ; then
+		echo "No such file: $2" >&2
+		exit 1
+	fi
+	
+	if SRC="$(getfattr -n user.source --only-values "$2" 2>/dev/null)" ; then
+		echo "$1$SRC"
+	else
+		echo "$1"
+	fi
+}
+
+if [ "$#" -eq 0 ] ; then
+	echo "Usage: $0 FILE..." >&2
+	echo "" >&2
+	echo "  prints the source of FILE found in the extended attribute 'user.source'." >&2
+	echo "  see also 'forget' and 'setsource'." >&2
+	exit 1
+elif [ "$#" -eq 1 ] ; then
+	printSrc "" "$1"
+else
+	while [ "$#" -ge 1 ] ; do
+		printSrc "$1: " "$1"
+		shift
+	done
+fi
