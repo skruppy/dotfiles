@@ -7,12 +7,12 @@ URL="https://nanosyntax.googlecode.com/svn/trunk/syntax-nanorc/"
 
 case "$1" in
 	"help"|"h"|"--help"|"-h"|"")
-		echo "Usage: $0 [download] [update] [\$location]"
-		echo ""
-		echo "  default location: /usr/share/nano/"
-		echo "  At least one action, download or update, has to be set."
-		echo "  The syntax definition source is"
-		echo "    $URL"
+		echo "Usage: $0 [download] [update] [\$location]" >&2
+		echo "" >&2
+		echo "  default location: /usr/share/nano/" >&2
+		echo "  At least one action, download or update, has to be set." >&2
+		echo "  The syntax definition source is" >&2
+		echo "    $URL" >&2
 		exit 1
 	;;
 esac
