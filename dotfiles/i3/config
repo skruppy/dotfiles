@@ -159,6 +159,15 @@ bar {
 
 bindsym $mod+Ctrl+l exec i3lock
 bindsym $mod+p exec dpower
+
+bindsym XF86AudioMute exec pavolume mute
+bindsym XF86AudioRaiseVolume exec pavolume up
+bindsym XF86AudioLowerVolume exec pavolume down
+
+# The value will become the nearest multiple of 12.5
+bindsym XF86MonBrightnessUp exec xbacklight +13 -time 0 -steps 1
+bindsym XF86MonBrightnessDown exec xbacklight -12 -time 0 -steps 1
+
 workspace_layout tabbed
 
 for_window [class="Xfce4-notifyd"] floating enable ; border none
