@@ -158,7 +158,7 @@ bar {
 
 
 bindsym $mod+Ctrl+l exec i3lock
-bindsym $mod+p exec --DOT_DIR--/bin/powerdialog
+bindsym $mod+p exec dpower
 workspace_layout tabbed
 
 for_window [class="Xfce4-notifyd"] floating enable ; border none
