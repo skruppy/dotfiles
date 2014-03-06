@@ -170,7 +170,12 @@ bindsym XF86MonBrightnessDown exec xbacklight -12 -time 0 -steps 1
 
 workspace_layout tabbed
 
+## The notify bubble
 for_window [class="Xfce4-notifyd"] floating enable ; border none
+
+## The unlock password promt of gnome-keyring-daemon
+for_window [class="Gcr-prompter"] floating enable
+
 # class                 border  backgr. text    indicator
 client.focused          #999999 #ccccff #000000 #2e9ef4
 client.focused_inactive #999999 #ccccdd #000000 #484e50
