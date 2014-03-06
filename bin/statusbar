@@ -22,6 +22,24 @@ def createBlockBacklight():
 	return createBlock("backlight", "bkl0", "FFFFFF", "☀ "+output)
 
 
+def createBlockMail():
+	count = 0
+	for line in open('local/mail/unread-counts'):
+		parts = line.split(":")
+		if len(parts) == 2:
+			count += int(parts[0])
+		else:
+			break
+	
+	if count > 0:
+		color = "FF0000"
+	else:
+		color = "FFFFFF"
+	
+	#return createBlock("mail", "mail0", color, "✉ %i" % count)
+	return createBlock("mail", "mail0", color, "M %i" % count)
+
+
 
 def createBlockVolume():
 	output = sh(["pacmd", "dump"]).split("\n")
@@ -106,6 +124,7 @@ while True:
 	line = ",".join([
 		createBlockBacklight(),
 		createBlockVolume(),
+		createBlockMail(),
 		line[2:]  ## Remove the leading ",[" (we add it again in the next line)
 	])
 	
