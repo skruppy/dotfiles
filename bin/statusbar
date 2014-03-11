@@ -18,56 +18,72 @@ def createBlock(name, instance, color, text):
 
 
 def createBlockBacklight():
-	output = sh(["/usr/bin/xbacklight", "-get"]).split(".")[0]
-	return createBlock("backlight", "bkl0", "FFFFFF", "☀ "+output)
+	try:
+		color = "FFFFFF"
+		msg = sh(["/usr/bin/xbacklight", "-get"]).split(".")[0]
+	except:
+		color = "FFFF00"
+		msg = "???"
+	
+	return createBlock("backlight", "bkl0", color, "☀ "+msg)
 
 
 def createBlockMail():
-	count = 0
-	for line in open('local/mail/unread-counts'):
-		parts = line.split(":")
-		if len(parts) == 2:
-			count += int(parts[0])
+	try:
+		count = 0
+		
+		for line in open('local/mail/unread-counts'):
+			parts = line.split(":")
+			if len(parts) == 2:
+				count += int(parts[0])
+			else:
+				break
+		
+		if count > 0:
+			color = "FF0000"
 		else:
-			break
+			color = "FFFFFF"
+		
+		msg = str(count)
+	except:
+		color = "FFFF00"
+		msg = "???"
 	
-	if count > 0:
-		color = "FF0000"
-	else:
-		color = "FFFFFF"
-	
-	#return createBlock("mail", "mail0", color, "✉ %i" % count)
-	return createBlock("mail", "mail0", color, "M %i" % count)
+	return createBlock("mail", "mail0", color, "✉ "+msg)
 
 
 
 def createBlockVolume():
-	output = sh(["pacmd", "dump"]).split("\n")
-	output.reverse()
-	
 	state = 0
 	
-	for line in output:
+	try:
+		output = sh(["pacmd", "dump"]).split("\n")
+		output.reverse()
 		
-		if len(line) == 0:
-			continue
 		
-		parts = line.split()
-		
-		if parts[0] == "set-default-sink":
-			device = parts[1]
-		
-		elif parts[0] == "set-sink-mute" and parts[1] == device:
-			mute = (parts[2] == "yes")
-			state |= 1
-			if state == 3:
-				break
-		
-		elif parts[0] == "set-sink-volume" and parts[1] == device:
-			volume = parts[2]
-			state |= 2
-			if state == 3:
-				break
+		for line in output:
+			
+			if len(line) == 0:
+				continue
+			
+			parts = line.split()
+			
+			if parts[0] == "set-default-sink":
+				device = parts[1]
+			
+			elif parts[0] == "set-sink-mute" and parts[1] == device:
+				mute = (parts[2] == "yes")
+				state |= 1
+				if state == 3:
+					break
+			
+			elif parts[0] == "set-sink-volume" and parts[1] == device:
+				volume = parts[2]
+				state |= 2
+				if state == 3:
+					break
+	except:
+		pass
 	
 	if state != 3:
 		color = "FF0000"
