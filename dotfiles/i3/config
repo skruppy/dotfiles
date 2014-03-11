@@ -11,10 +11,7 @@
 
 set $mod Mod4
 
-# font for window titles. ISO 10646 = Unicode
-font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
-#font -misc-ubuntu-medium-r-normal--0-0-0-0-p-0-iso8859-2 # arch wiki says that this is UTF8
-#font -misc-ubuntu-medium-r-normal--0-0-0-0-p-0-iso10646-1
+font pango: DejaVu Sans 8
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
@@ -152,7 +149,6 @@ bindsym $mod+r mode "resize"
 # Start i3bar to display a workspace bar (plus the system information i3status
 # finds out, if available)
 bar {
-#        status_command i3status
         status_command statusbar
 }
 
