@@ -1,0 +1,24 @@
+#!/bin/sh
+
+set -e
+
+
+if [ "$#" -lt 1 ] ; then
+	echo "Usage: $0 SRC FILE..." >&2
+	echo "" >&2
+	echo "  sets the source to SRC for FILE or removes their sources if SRC is an" >&2
+	echo "  empty string. The sources are saved in the 'user.source' extended" >&2
+	echo "  attributes. It can retreved by 'remember FILE'" >&2
+	exit 1
+elif [ "$#" -eq 1 ] ; then
+	exit 0
+fi
+
+SRC="$1"
+shift
+if [ -n "$SRC" ] ; then
+	setfattr -n user.source -v "$SRC" "$@"
+else
+	
+	setfattr -x user.source "$@"
+fi
