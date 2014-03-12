@@ -1,0 +1,27 @@
+#!/bin/sh
+
+set -e
+
+## The last pipe command won't be forked (needed for read)
+shopt -s lastpipe
+
+## The commands are whitespace separated from the description
+dmenu \
+	-i \
+	-l 10 \
+	-p "The second screen is" \
+	-nb "#ccc" \
+	-nf "#000" \
+	-sb "#5f5" \
+	-sf "#000" \
+	<<EOF | cut -f1 -d " " | read cmd
+auto
+mirrored
+above
+right
+below
+left
+off
+EOF
+
+sc "$cmd"

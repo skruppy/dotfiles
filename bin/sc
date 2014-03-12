@@ -1,0 +1,135 @@
+#!/bin/sh
+
+set -e
+
+
+printUsage() {
+	echo "Usage: $(basename "$0") [-v|--verbose] MODE" >&2
+	echo "" >&2
+	echo "  changes mode and position of the secondary screen output. MODE" >&2
+	echo "  can be one of the following or just the first letter of it:" >&2
+	echo "   * auto" >&2
+	echo "   * mirrored/same" >&2
+	echo "   * above" >&2
+	echo "   * right" >&2
+	echo "   * below" >&2
+	echo "   * left" >&2
+	echo "   * off" >&2
+	exit 1
+}
+
+
+log() {
+	## Log to console
+	if [ "$verbose" = "yes" ] ; then
+		echo "$1"
+	fi
+	
+	## Log to file
+	if [ -n "$logFile" ] ; then
+		echo "$1" >>"$logFile"
+	fi
+}
+
+
+callXrandr() {
+	log "xrandr P=$primOutput S=$secOutput $*"
+	xrandr --output "$primOutput" --auto --output "$secOutput" "$@"
+}
+
+
+setMode() {
+	if [ "$#" -eq "1" ] ; then
+		callXrandr --auto --$1 "$primOutput"
+	else
+		callXrandr --off
+	fi
+}
+
+
+autoMode() {
+	case "$(cat /sys/class/drm/$card/status)" in
+		"connected")
+			edid="$(md5sum /sys/class/drm/$card/edid | cut -c -32)"
+			log "connected. looking for EDID $edid"
+			
+			case "$edid" in
+				## monitor at home
+				"f7b7199abf45a8a23817cbe6abfa912f")
+					setMode "above"
+					;;
+				## projector at home
+				"unknownUntilNow")
+					setMode "same-as"
+					;;
+				*)
+					log "none matched"
+					;;
+			esac
+			;;
+		
+		"disconnected")
+			log "disconnected. turning output off"
+			callXrandr --off
+			;;
+	esac
+}
+
+
+## Arguments: test for (and consume) verbose flag
+if [ "$1" = "-v" -o "$1" = "--verbose" ] ; then
+	verbose="yes"
+	shift
+else
+	verbose="no"
+fi
+
+
+## Start a log file if a) root and b) verbose
+if [ "$UID" -eq "0" -a "$verbose" = "yes" ] ; then
+	logFile="/var/log/$(basename "$0").log"
+	
+	log ""
+	log "## $(date)"
+else
+	unset logFile
+fi
+
+
+## Fix a headless root by giving her access to skrupellos's X session
+if [ "$UID" -eq "0" ] ; then
+	export XAUTHORITY="${XAUTHORITY:-/home/skrupellos/.Xauthority}"
+fi
+
+
+## Arguments: test for invalid arguments count
+if [ "$#" -ne "1" ] ; then
+	printUsage
+fi
+
+
+## Set machine dependent configuration
+case "$(md5sum /proc/sys/kernel/hostname | cut -c -32)" in
+	"87d37dd8b1754d42f8660dc7dfcbbcf2")
+		card="card0-VGA-1"
+		primOutput="LVDS1"
+		secOutput="VGA1"
+		;;
+	*)
+		echo "No configuration for $(cat /proc/sys/kernel/hostname)" >&2
+		exit 2
+		;;
+esac
+
+
+## Arguments: test for valid mode
+case "$1" in
+	"a"|"auto")                autoMode           ;;
+	"m"|"mirrored"|"s"|"same") setMode "same-as"  ;;
+	"a"|"above")               setMode "above"    ;;
+	"r"|"right")               setMode "right-of" ;;
+	"b"|"below")               setMode "below"    ;;
+	"l"|"left")                setMode "left-of"  ;;
+	"o"|"off")                 setMode            ;;
+	*)                         printUsage         ;;
+esac
