@@ -153,8 +153,8 @@ bar {
 }
 
 
-bindsym $mod+Ctrl+l exec i3lock
-bindsym $mod+p exec dpower
+bindsym $mod+Ctrl+L exec i3lock
+bindsym $mod+Ctrl+P exec dpower
 bindsym $mod+Ctrl+S exec dsc
 
 bindsym XF86AudioMute exec pavolume mute
