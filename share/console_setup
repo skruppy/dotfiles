@@ -1,16 +1,161 @@
-case "$(hostname -d)" in
-	"fs.lmu.de"|*".fs.lmu.de")
-		umask 0007
+## non-interactive shells shall not pass
+[[ $- != *i* ]] && return
+
+
+## == Variable definitions
+## ---- Actual shell ($SHELL is the login shell)
+S_ACT_SHELL="$(ps -p $$ -o comm=)"
+
+## ---- hostname is not everywhere installed, therefore we need our own
+S_FQDN="$(cat /proc/sys/kernel/hostname)"
+S_HOST="$(cut -d. -f1 /proc/sys/kernel/hostname)"
+S_DOMAIN="$(cut -d. -f2- /proc/sys/kernel/hostname)"
+
+## ---- test for login shell
+case "$S_ACT_SHELL" in
+	"bash")
+		if shopt -q login_shell
+		then S_LOGIN="y"
+		else S_LOGIN="n"
+		fi
 		;;
-	"cip.ifi.lmu.de")
-		unalias rm
-		umask 077
+	"zsh")
+		if [[ -o login ]]
+		then S_LOGIN="y"
+		else S_LOGIN="n"
+		fi
+		;;
+	*)
+		S_LOGIN="y"
 		;;
 esac
 
-[[ $- != *i* ]] && return
 
-export DOT_DIR="$(cat "$HOME/.dotdir")"
+## == Once on all interactive shells (variables, umask)
+if [ "$S_ENV_OK" != "y" ] ; then
+	if [ -f "$HOME/.dotdir" ] ; then
+		export DOT_DIR="$(cat "$HOME/.dotdir")"
+		export PATH="$DOT_DIR/bin:$PATH"
+	fi
+	
+	source "$DOT_DIR/share/variables.sh"
+	
+	case "$S_DOMAIN" in
+		"fs.lmu.de"|*".fs.lmu.de")
+			umask 0007
+			;;
+		"cip.ifi.lmu.de")
+			umask 0077
+			;;
+		*)
+			umask 0022
+			;;
+	esac
+	
+	export S_ENV_OK="y"
+fi
 
-source "$DOT_DIR/share/bash_promt"
+
+## == Every time on all interactive shells (aliases, functions)
+case "$S_DOMAIN" in
+	"cip.ifi.lmu.de")
+		unalias rm
+		;;
+esac
+
 source "$DOT_DIR/share/aliases"
+source "$DOT_DIR/share/bash_promt"
+
+case "$S_ACT_SHELL" in
+	"bash")
+		# check the window size after each command and, if necessary,
+		# update the values of LINES and COLUMNS.
+		shopt -s checkwinsize
+		
+		# Prevent that multiple bash instances overwrite the readline history of each
+		# other.
+		shopt -s histappend
+		;;
+	
+	"zsh")
+		## khome = Home   kcuu1 = Up      kpp = Page Up
+		## kend  = End    kcud1 = Down    knp = Page Down
+		## kich1 = Ins    kcub1 = Left
+		## kdch1 = Del    kcuf1 = Right
+		
+		# setup key accordingly
+		test -n "${terminfo[khome]}" && bindkey "${terminfo[khome]}"   beginning-of-line
+		test -n "${terminfo[kend]}"  && bindkey "${terminfo[kend]}"    end-of-line
+		test -n "${terminfo[kich1]}" && bindkey "${terminfo[kich1]}"   overwrite-mode
+		test -n "${terminfo[kdch1]}" && bindkey "${terminfo[kdch1]}"   delete-char
+		test -n "${terminfo[kcuu1]}" && bindkey "${terminfo[kcuu1]}"   up-line-or-history
+		test -n "${terminfo[kcud1]}" && bindkey "${terminfo[kcud1]}"   down-line-or-history
+		test -n "${terminfo[kcub1]}" && bindkey "${terminfo[kcub1]}"   backward-char
+		test -n "${terminfo[kcuf1]}" && bindkey "${terminfo[kcuf1]}"   forward-char
+		test -n "${terminfo[kpp]}"   && bindkey "${terminfo[kpp]}"     beginning-of-buffer-or-history
+		test -n "${terminfo[knp]}"   && bindkey "${terminfo[knp]}"     end-of-buffer-or-history
+		test -n "${terminfo[kcuf1]}" && bindkey "\e${terminfo[kcuf1]}" forward-word
+		test -n "${terminfo[kcub1]}" && bindkey "\e${terminfo[kcub1]}" backward-word
+		
+		# Finally, make sure the terminal is in application mode, when zle is
+		# active. Only then are the values from $terminfo valid.
+		if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} ))
+		then
+			function zle-line-init () {
+				printf '%s' "${terminfo[smkx]}"
+			}
+			
+			function zle-line-finish () {
+				printf '%s' "${terminfo[rmkx]}"
+			}
+			
+			zle -N zle-line-init
+			zle -N zle-line-finish
+		fi
+		
+		setopt share_history
+		setopt hist_ignore_all_dups
+		setopt autocd
+		setopt extendedglob
+		
+		autoload -U compinit
+		compinit
+		
+		## Add a caption with the source of the suggestions
+		zstyle ':completion:*:descriptions' format '%U%B%d%b%u'
+		zstyle ':completion:*:warnings'     format '%BSorry, no matches for: %d%b'
+		
+		## Color directory suggestions
+		zstyle ':completion:*:default'      list-colors ${(s.:.)LS_COLORS}
+		;;
+esac
+
+
+## == Every time on interactive login shells
+if [ "$S_LOGIN" = "y" ]
+then
+	## ---- Start key agents
+	if command -v gnome-keyring-daemon >/dev/null && [ -n "$DISPLAY" ]
+	then
+		eval "$(gnome-keyring-daemon --start)"
+		export GNOME_KEYRING_CONTROL
+		export SSH_AUTH_SOCK
+		export GPG_AGENT_INFO
+	elif command -v gpg-agent >/dev/null
+	then
+		if [ -f "$HOME/.gpg-agent-info" ] ; then
+			. "$HOME/.gpg-agent-info"
+			
+			if [ ! -O "$SSH_AUTH_SOCK" ] ; then
+				unset SSH_AUTH_SOCK
+			fi
+		fi
+
+		if [ -z "$SSH_AUTH_SOCK" ] ; then
+			gpg-agent --daemon --enable-ssh-support >"$HOME/.gpg-agent-info"
+		fi
+	fi
+
+## Every time on interactive non-login shells
+else
+fi

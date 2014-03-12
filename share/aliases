@@ -1,90 +1,36 @@
-if [ -f "$HOME/.dotdir" ] ; then
-	export DOT_DIR="$(cat "$HOME/.dotdir")"
-	export PATH="$DOT_DIR/bin:$PATH"
-fi
-
-export EDITOR=nano
-export EAGLEDIR=/home/skrupellos/local/eagle
-export LANG="en_US.UTF-8"
-export TERMINAL=/usr/bin/urxvtc
-
-## Modiefied: di, ln, *~
-export LS_COLORS='rs=0:di=01;36:ln=36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;'\
-'33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;'\
-'41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*~=01;30:*.tar=01;'\
-'31:*.tgz=01;31:*.arj=01;31:*.taz=01;31:*.lzh=01;'\
-'31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.zip=01;31:*.z=01;'\
-'31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lz=01;31:*.xz=01;'\
-'31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;'\
-'31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;'\
-'31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.ace=01;'\
-'31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.jpg=01;'\
-'35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;'\
-'35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;'\
-'35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;'\
-'35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;'\
-'35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;'\
-'35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;'\
-'35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;'\
-'35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;'\
-'35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;'\
-'35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;'\
-'35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.axv=01;'\
-'35:*.anx=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;'\
-'36:*.flac=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;'\
-'36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;'\
-'36:*.axa=00;36:*.oga=00;36:*.spx=00;36:*.xspf=00;36:'
-
-alias grep="grep --color=always"
-alias grepf="grep --color=auto"
-alias fgrep="fgrep --color=always"
+alias grep="grep    --color=always"
+alias grepf="grep   --color=auto"
+alias fgrep="fgrep  --color=always"
 alias fgrepf="fgrep --color=auto"
-alias egrep="egrep --color=always"
+alias egrep="egrep  --color=always"
 alias egrepf="egrep --color=auto"
 
-alias ll="ls -hlv --color=always --group-directories-first"
-alias llf="ls -hlv --color=auto --group-directories-first"
-alias l="ls -hlv --color=always --group-directories-first"
-alias lf="ls -hlv --color=auto --group-directories-first"
-alias la="ls -hlva --color=always --group-directories-first"
-alias laf="ls -hlva --color=auto --group-directories-first"
+alias ll="ls  -hlv  --color=always --group-directories-first"
+alias llf="ls -hlv  --color=auto   --group-directories-first"
+alias l="ls   -hlv  --color=always --group-directories-first"
+alias lf="ls  -hlv  --color=auto   --group-directories-first"
+alias la="ls  -hlva --color=always --group-directories-first"
+alias laf="ls -hlva --color=auto   --group-directories-first"
+
+## Shortcuts for most used commands
 alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."
 alias c="cd"
 alias s="ssh"
 alias m="mosh"
+
+## Prevent overwriting
 alias mv="mv -i"
 alias cp="cp -i"
 
 ## Allow colors in less
 alias less="less -R"
 
-alias kismet="TERM=rxvt-unicode kismet"
 alias sml="rlwrap -p'green' sml"
-alias ushutdown="sudo /sbin/shutdown -h now"
-alias ureboot="sudo /sbin/shutdown -r now"
-alias R="R_LIBS_USER=~/.r/i686-pc-linux-gnu-library/2.14/ R"
 alias r="R"
-alias libreoffice="OOO_FORCE_DESKTOP=kde4 libreoffice"
 alias feh="feh --scale-down"
-alias thunderbird="LANG=C thunderbird"
-alias anki="anki -b /home/skrupellos/local/anki"
+alias anki="anki -b $HOME/local/anki"
 
 alias setprinted="setfattr -n user.printed -v 'printed' "
 alias clearprinted="setfattr -x user.printed "
-
-if command -v gpg-agent >/dev/null && [ "$(hostname -f)" != "universe.homenet.org" ]
-then
-	if [ -f "$HOME/.gpg-agent-info" ] ; then
-		. "$HOME/.gpg-agent-info"
-		
-		if [ ! -O "$SSH_AUTH_SOCK" ] ; then
-			unset SSH_AUTH_SOCK
-		fi
-	fi
-
-	if [ -z "$SSH_AUTH_SOCK" ] ; then
-		gpg-agent --daemon --enable-ssh-support >"$HOME/.gpg-agent-info"
-	fi
-fi
