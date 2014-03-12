@@ -15,7 +15,7 @@ if [ "$#" -eq "0" ] ; then
 	fileCnt=$(find -maxdepth 1 -type f -name '*.tex' | wc -l)
 	
 	if [ $fileCnt == 1 ] ; then
-		compile "$(find -maxdepth 1 -type f -name '*.tex' -exec)"
+		compile "$(find -maxdepth 1 -type f -name '*.tex')"
 	else
 		echo "ERROR: Sorry, I don't know which file to compile, there are $fileCnt.">&2
 		echo "Please give me one as an argument.">&2
