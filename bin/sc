@@ -2,6 +2,14 @@
 
 set -e
 
+## To enable automatic screen configuration, on connection and dissconnection
+## of an output. Add create /etc/udev/rules.d/42-autoscreen.rules with the
+## following content
+## 
+##     SUBSYSTEM=="drm", ACTION=="change", RUN+="/root/dotfiles/sc -v auto"
+## 
+## Since the script is executed by root, it's strongly recommend that root it
+## the only one with write access. You can e.g. use the dotfiles repo of root.
 
 printUsage() {
 	echo "Usage: $(basename "$0") [-v|--verbose] MODE" >&2
@@ -54,12 +62,20 @@ autoMode() {
 			log "connected. looking for EDID $edid"
 			
 			case "$edid" in
-				## monitor at home
-				"f7b7199abf45a8a23817cbe6abfa912f")
+				## VGA monitor at home
+				## VGA monitor of wu at gaf
+				## VGA monitor of emo at gaf
+				## VGA monitor of gauss at gaf
+				## VGA monitor of neumann at gaf
+				"f7b7199abf45a8a23817cbe6abfa912f"| \
+				"dd6b0eb03e7e65cd66e9b83a1896d8b1"| \
+				"50888be149b9f1c6ff31251b8e0bc644"| \
+				"5235b56ec2110cc8dec9030068a2d67c"| \
+				"635bf0ff583b8e20ad115a09accfa1e6")
 					setMode "above"
 					;;
 				## projector at home
-				"unknownUntilNow")
+				"52826fb79a80af99c833144adfe60b20")
 					setMode "same-as"
 					;;
 				*)
