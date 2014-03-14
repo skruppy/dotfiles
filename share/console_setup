@@ -158,4 +158,5 @@ then
 
 ## Every time on interactive non-login shells
 else
+	true
 fi
