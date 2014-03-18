@@ -6,7 +6,7 @@ set -e
 ## of an output. Add create /etc/udev/rules.d/42-autoscreen.rules with the
 ## following content
 ## 
-##     SUBSYSTEM=="drm", ACTION=="change", RUN+="/root/dotfiles/sc -v auto"
+##     SUBSYSTEM=="drm", ACTION=="change", RUN+="/root/dotfiles/bin/sc -v auto"
 ## 
 ## Since the script is executed by root, it's strongly recommend that root it
 ## the only one with write access. You can e.g. use the dotfiles repo of root.
