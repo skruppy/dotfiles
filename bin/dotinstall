@@ -1,5 +1,12 @@
 #!/bin/bash
 
+## Install everything using
+## wget https://raw.githubusercontent.com/Skrupellos/dotfiles/master/bin/dotinstall | bash
+if [ "$(basename "$0")" != "dotinstall" ] ; then
+	git clone ssh://git@github.com/Skrupellos/dotfiles.git
+	#git clone https://github.com/Skrupellos/dotfiles.git
+fi
+
 set -e
 
 ## Set the pwd to the project root, so we can savely use relative path names
