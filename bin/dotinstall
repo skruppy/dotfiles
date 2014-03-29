@@ -1,32 +1,51 @@
 #!/bin/bash
+## Bash required for truncating variables
+
+set -e
 
 ## Install everything using
 ## wget https://raw.githubusercontent.com/Skrupellos/dotfiles/master/bin/dotinstall | bash
 if [ "$(basename "$0")" != "dotinstall" ] ; then
 	git clone ssh://git@github.com/Skrupellos/dotfiles.git
 	#git clone https://github.com/Skrupellos/dotfiles.git
+	dotfiles/bin/dotinstall
+	
+	exit
 fi
-
-set -e
 
 ## Set the pwd to the project root, so we can savely use relative path names
 cd "$(dirname "$0")/.."
 export DOT_DIR="$(pwd)"
 echo "$DOT_DIR" >"$HOME/.dotdir"
 
-source share/console_setup
+. share/console_setup
 
-cd dotfiles
-find -type f | cut -c 3- | while read file ; do
-	DST="$HOME/.$file"
-	mkdir -p "$(dirname "$DST")"
-	cp "$file" "$DST"
-done
 
-for f in ".i3status.conf"
-do
-	sed -i -e "s#--DOT_DIR--#$DOT_DIR#g" "$HOME/$f"
-done
+newPreparation() {
+	if [ -e "$HOME/$2" ] ; then
+		mkdir -p "$(dirname "$BAK/${2:1}")"
+		ln "$HOME/$2" "$BAK/${2:1}"
+	fi
+	
+	mkdir -p "$(dirname "$HOME/${2:1}")"
+}
+
+newCopy() {
+	newPreparation "$1" "$2"
+	cp "$DOT_DIR/$1" "$HOME/$2"
+}
+
+
+newLink() {
+	newPreparation "$1" "$2"
+	ln -fs "$DOT_DIR/$1" "$HOME/$2"
+}
+
+
+## Create backups
+BAK="$HOME/.dotback/$(date "+%F_%T")"
+ls "$HOME/.dotback" -r | awk 'NR>10' | xargs rm
+
 
 case "$S_DOMAIN" in
 	"cip.ifi.lmu.de")
@@ -34,8 +53,19 @@ case "$S_DOMAIN" in
 		;;
 esac
 
-ln -fs "$DOT_DIR/share/console_setup" "$HOME/.profile"         ## interactive & login
-ln -fs "$DOT_DIR/share/console_setup" "$HOME/.bashrc$rbg_fix"  ## interactive & not login
-ln -fs "$DOT_DIR/share/console_setup" "$HOME/.zshenv"          ## allways
 
+## Create directories
+find dotfiles -type f | while read file ; do
+	newCopy "$file" ".$file"
+	sed -i -e "s#--DOT_DIR--#$DOT_DIR#g" "$HOME/.$file"
+done
+
+
+## Setup console
+newLink "share/console_setup" ".profile"         ## interactive & login
+newLink "share/console_setup" ".bashrc$rbg_fix"  ## interactive & not login
+newLink "share/console_setup" ".zshenv"          ## allways
+
+
+## Setup nano
 nanorc update
