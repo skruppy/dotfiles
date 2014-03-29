@@ -30,7 +30,7 @@ ${pLineC}└─${pPromtC}>>${pNormalC} "
 
 
 precmd() {
-	## == Create a notice if last command failed
+	## ==== Create a notice if last command failed
 	## This has to stay at the top, to get the right return value
 	local returncode=$?
 	

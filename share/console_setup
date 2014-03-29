@@ -10,16 +10,16 @@ case "$-" in
 esac
 
 
-## == Variable definitions
-## ---- Actual shell ($SHELL is the login shell)
+## ==== Variable definitions ===================================================
+## -- Actual shell ($SHELL is the login shell)
 S_ACT_SHELL="$(ps -p $$ -o comm=)"
 
-## ---- hostname is not everywhere installed, therefore we need our own
+## -- hostname is not everywhere installed, therefore we need our own
 S_FQDN="$(cat /proc/sys/kernel/hostname)"
 S_HOST="$(cut -d. -f1 /proc/sys/kernel/hostname)"
 S_DOMAIN="$(cut -d. -f2- /proc/sys/kernel/hostname)"
 
-## ---- test for login shell
+## -- test for login shell
 case "$S_ACT_SHELL" in
 	"bash")
 		if shopt -q login_shell
@@ -39,10 +39,10 @@ case "$S_ACT_SHELL" in
 esac
 
 
-## == Once on all interactive shells (variables, umask)
-if [ "$S_ENV_OK" != "y" ] ; then
-	if [ -f "$HOME/.dotdir" ] ; then
-		export DOT_DIR="$(cat "$HOME/.dotdir")"
+## ==== Once on all interactive shells (variables, umask) ======================
+if [ -z "$DOT_DIR" ] ; then
+	if [ -f "$HOME/.dot/dir" ] ; then
+		export DOT_DIR="$(cat "$HOME/.dot/dir")"
 		export PATH="$DOT_DIR/bin:$PATH"
 	else
 		return
@@ -61,12 +61,10 @@ if [ "$S_ENV_OK" != "y" ] ; then
 			umask 0022
 			;;
 	esac
-	
-	export S_ENV_OK="y"
 fi
 
 
-## == Every time on all interactive shells (aliases, functions)
+## ==== Every time on all interactive shells (aliases, functions) ==============
 case "$S_DOMAIN" in
 	"cip.ifi.lmu.de")
 		unalias rm
@@ -164,10 +162,10 @@ case "$S_ACT_SHELL" in
 esac
 
 
-## == Every time on interactive login shells
+## ==== Every time on interactive login shells =================================
 if [ "$S_LOGIN" = "y" ]
 then
-	## ---- Start D-Bus
+	## -- Start D-Bus ----------------------------------------------------------
 	if \
 		[ -z "$DBUS_SESSION_BUS_ADDRESS" ] && \
 		[ -n "$DISPLAY" ] && \
@@ -176,7 +174,7 @@ then
 	  eval $(dbus-launch --exit-with-session)
 	fi
 	
-	## ---- Start key agents
+	## -- Start key agents -----------------------------------------------------
 	if command -v gnome-keyring-daemon >/dev/null && [ -n "$DISPLAY" ]
 	then
 		eval "$(gnome-keyring-daemon --start)"
@@ -198,7 +196,7 @@ then
 		fi
 	fi
 
-## Every time on interactive non-login shells
+## ==== Every time on interactive non-login shells =============================
 else
 	true
 fi
