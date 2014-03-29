@@ -92,6 +92,20 @@ newLink "share/console_setup" ".zshenv"          ## allways
 ## -- nano ---------------------------------------------------------------------
 nanorc update
 
+
+## -- git ----------------------------------------------------------------------
+if type git >/dev/null ; then
+	echo git config --global user.name "..."
+	echo git config --global user.email "..."
+	git config --global push.default "simple"
+	git config --global color.ui "auto"
+
+	if type kdiff3 >/dev/null ; then
+		git config --global merge.tool "kdiff3"
+	fi
+fi
+
+## -- i3 -----------------------------------------------------------------------
 if type i3-msg >/dev/null ; then
 	i3-msg --quiet reload
 fi
