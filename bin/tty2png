@@ -1,0 +1,40 @@
+#!/bin/sh
+
+set -e
+
+
+CLEANUP="n"
+
+if [ "$#" -eq "2" ] ; then
+	IN_FILE="$1"
+	OUT_FILE="$2"
+elif [ "$#" -eq "1" ] ; then
+	IN_FILE="$(mktemp)"
+	OUT_FILE="$1"
+	CLEANUP="y"
+	
+	tee "$IN_FILE"
+else
+	echo "Usage: $(basename "$0") [INPUT] OUTPUT" >&2
+	echo "" >&2
+	echo "  connverts an input text with ANSI colors to an OUTPUT PNG file. If" >&2
+	echo "  an INPUT file is given, it will be used as imput, otherwise stdin." >&2
+	echo "  If stdin is used, it will also be send to stdout." >&2
+	echo "" >&2
+	echo "Example:" >&2
+	echo "  fany-command | $(basename "$0") output.png" >&2
+	
+	exit 1
+fi
+
+
+ansi2gif \
+	--png \
+	--xsize=$(expr "$(sed -e "s#\x1B[^m]*m##g" "$IN_FILE" | wc -L)" + "1") \
+	--ysize=$(wc -l "$IN_FILE" | cut -d " " -f 1) \
+	"$IN_FILE" \
+	"$OUT_FILE"
+
+if [ "$CLEANUP" = "y" ] ; then
+	rm "$IN_FILE"
+fi

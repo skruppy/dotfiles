@@ -1,0 +1,224 @@
+#!/bin/sh
+
+set -e
+
+TIMEOUT="0"
+QUIET="n"
+FOREGROUND="n"
+TEST="n"
+ALARM_FILE="/usr/share/sounds/purple/login.wav"
+
+
+printUsage() {
+	echo "Usage: $(basename "$0") OPTIONS TIME" >&2
+	echo "" >&2
+	echo "  displays a notification after TIME and plays a sound" >&2
+	echo "" >&2
+	echo "OPTIONS" >&2
+	echo "  -q       --quiet           Don't play any sound" >&2
+	echo "  -n       --no-background   Run in foreground" >&2
+	echo "  -m MSG   --message MSG     Change the default message after TIME to MSG" >&2
+	echo "  -f FILE  --file FILE       Change the default alarm sound to FILE" >&2
+	echo "  -p CMD   --player CMD      Change the default audio player to CMD" >&2
+	echo "  -c CMD   --msg-cmd CMD     Change the default notification command to CMD" >&2
+	echo "  -h       --help            Display this message" >&2
+	echo "" >&2
+	echo "TIME" >&2
+	echo "  the total waiting time is the accumulation of seconds, minutes and hours" >&2
+	echo "  statements or their abbreviation. Examples:" >&2
+	echo "    * 2 minutes 5 seconds" >&2
+	echo "    * 4 h" >&2
+	echo "    * 1 minute 30 s" >&2
+	exit ${1:-1}
+}
+
+
+cmdExists() {
+	if [ "$#" -ge "1" ] && type "$1" >/dev/null ; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+
+justSitAndWait() {
+	sleep "$TIMEOUT"
+	
+	$MSG_CMD "$MSG" >/dev/null &
+	
+	if [ "$QUIET" = "n" ] ; then
+		$PLAY_CMD "$ALARM_FILE" >/dev/null
+		$PLAY_CMD "$ALARM_FILE" >/dev/null
+	fi
+}
+
+
+## ==== Find defaults ==========================================================
+## -- Alarm file ---------------------------------------------------------------
+for f in \
+	"/usr/share/sounds/purple/login.wav"
+do
+	if [ -f "$f" ] ; then
+		ALARM_FILE="$f"
+		break
+	fi
+done
+
+
+## -- Select notification provider ---------------------------------------------
+for cmd in \
+	"i3-nagbar -t warning -m" \
+	"notify-send"
+do
+	if cmdExists $cmd ; then
+		MSG_CMD="$cmd"
+		break
+	fi
+done
+
+
+## -- Select audio player ------------------------------------------------------
+for cmd in \
+	"paplay" \
+	"aplay" \
+	"cvlc --quiet --play-and-exit"
+do
+	if cmdExists $cmd ; then
+		PLAY_CMD="$cmd"
+		break
+	fi
+done
+
+
+## ==== Parse all arguments ====================================================
+if [ "$#" -eq "0" ] ; then
+	echo "No options" >&2
+	printUsage
+	# exit
+fi
+
+
+## -- Options ------------------------------------------------------------------
+while [ "$#" -gt "0" ] ; do
+	case "$1" in
+		"-q"|"--quiet")
+			QUIET="y"
+			shift
+		;;
+		"-n"|"--no-background")
+			FOREGROUND="y"
+			shift
+		;;
+		"-m"|"--message")
+			MSG="$2"
+			shift
+			shift
+		;;
+		"-f"|"--file")
+			ALARM_FILE="$2"
+			shift
+			shift
+		;;
+		"-p"|"--player")
+			PLAY_CMD="$2"
+			shift
+			shift
+		;;
+		"-c"|"--cmd")
+			MSG_CMD="$2"
+			shift
+			shift
+		;;
+		"-t"|"--test")
+			TEST="y"
+			shift
+		;;
+		"-h"|"--help")
+			printUsage 0
+			# exit
+		;;
+		*)
+			break
+		;;
+	esac
+done
+
+
+## -- Time format --------------------------------------------------------------
+while [ "$#" -gt "0" ] ; do
+	secons="$1"
+	
+	case "$2" in
+		"s"|"sec"|"seconds"|"second")
+			TIMEOUT="$(expr "$TIMEOUT" + "$secons")"
+		;;
+		"m"|"min"|"minutes"|"minute")
+			TIMEOUT="$(expr "$TIMEOUT" + "$secons" \* "60")"
+		;;
+		"h"|"hours"|"hour")
+			TIMEOUT="$(expr "$TIMEOUT" + "$secons" \* "3600")"
+		;;
+		*)
+			echo "$2 is not a valid time unit" >&2
+			printUsage
+			# exit
+		;;
+	esac
+	
+	shift
+	shift
+done
+
+
+## -- Set default MSG ----------------------------------------------------------
+if [ -z "$MSG" ] ; then
+	MSG="I've waited $TIMEOUT seconds"
+elif [ "$MSG" = "-" ] ; then
+	read MSG
+fi
+
+
+## ==== Do stuff ===============================================================
+## -- Test notification provider -----------------------------------------------
+if ! cmdExists $MSG_CMD ; then
+	echo "Sorry no notification command $MSG_CMD" >&2
+	exit 3
+fi
+
+## -- Test audio ---------------------------------------------------------------
+if [ "$QUIET" = "n" ] ; then
+	## Test existance of the audio file
+	if [ ! -f "$ALARM_FILE" ] ; then
+		echo "Sorry no alarm file $ALARM_FILE" >&2
+		echo "but you can use --quiet instead." >&2
+		exit 4
+	fi
+	
+	## Test existance of the audio player
+	if ! cmdExists $PLAY_CMD ; then
+		echo "Sorry no audio player $PLAY_CMD" >&2
+		echo "but you can use --quiet instead." >&2
+		exit 5
+	fi
+	
+	## Do a test alarm to test the speakers
+	echo "You should have heared a sound. If not, is your volume up?"
+	$PLAY_CMD "$ALARM_FILE" &
+fi
+
+if [ "$TEST" = "y" ] ; then
+	echo ""
+	echo "        Audio cmd: $PLAY_CMD \"$ALARM_FILE\""
+	echo " Notification cmd: $MSG_CMD \"$MSG\""
+	echo "          Timeout: $TIMEOUT"
+	exit 0
+fi
+
+
+## -- Go to sleep --------------------------------------------------------------
+if [ "$FOREGROUND" = "n" ] ; then
+	justSitAndWait &
+else
+	justSitAndWait
+fi

@@ -69,3 +69,7 @@ newLink "share/console_setup" ".zshenv"          ## allways
 
 ## Setup nano
 nanorc update
+
+if type i3-msg >/dev/null ; then
+	i3-msg --quiet reload
+fi
