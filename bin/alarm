@@ -1,10 +1,11 @@
 #!/bin/sh
 
-#set -e
+set -e
 
 TIMEOUT="0"
 QUIET="n"
 FOREGROUND="n"
+TEST="n"
 ALARM_FILE="/usr/share/sounds/purple/login.wav"
 
 
@@ -67,7 +68,7 @@ done
 
 ## -- Select notification provider ---------------------------------------------
 for cmd in \
-	"i3-nagbar  -t warning -m" \
+	"i3-nagbar -t warning -m" \
 	"notify-send"
 do
 	if cmdExists $cmd ; then
@@ -127,6 +128,10 @@ while [ "$#" -gt "0" ] ; do
 		"-c"|"--cmd")
 			MSG_CMD="$2"
 			shift
+			shift
+		;;
+		"-t"|"--test")
+			TEST="y"
 			shift
 		;;
 		"-h"|"--help")
@@ -200,6 +205,14 @@ if [ "$QUIET" = "n" ] ; then
 	## Do a test alarm to test the speakers
 	echo "You should have heared a sound. If not, is your volume up?"
 	$PLAY_CMD "$ALARM_FILE" &
+fi
+
+if [ "$TEST" = "y" ] ; then
+	echo ""
+	echo "        Audio cmd: $PLAY_CMD \"$ALARM_FILE\""
+	echo " Notification cmd: $MSG_CMD \"$MSG\""
+	echo "          Timeout: $TIMEOUT"
+	exit 0
 fi
 
 
