@@ -32,3 +32,7 @@ ln -fs "$DOT_DIR/share/console_setup" "$HOME/.bashrc$rbg_fix"  ## interactive & 
 ln -fs "$DOT_DIR/share/console_setup" "$HOME/.zshenv"          ## allways
 
 nanorc update
+
+if type i3-msg >/dev/null ; then
+	i3-msg --quiet reload
+fi
