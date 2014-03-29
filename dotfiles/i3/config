@@ -173,6 +173,9 @@ for_window [class="Xfce4-notifyd"] floating enable ; border none
 ## The unlock password promt of gnome-keyring-daemon
 for_window [class="Gcr-prompter"] floating enable
 
+## Gnome's Kupfer application launcher
+for_window [class="Kupfer.py"] border none
+
 # class                 border  backgr. text    indicator
 client.focused          #999999 #ccccff #000000 #2e9ef4
 client.focused_inactive #999999 #ccccdd #000000 #484e50
