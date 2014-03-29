@@ -6,35 +6,63 @@ set -e
 ## Set the pwd to the project root, so we can savely use relative path names
 cd "$(dirname "$0")/.."
 export DOT_DIR="$(pwd)"
-echo "$DOT_DIR" >"$HOME/.dotdir"
+mkdir -p "$HOME/.dot"
+echo "$DOT_DIR" >"$HOME/.dot/dir"
 
 . share/console_setup
 
 
 newPreparation() {
-	if [ -e "$HOME/$2" ] ; then
-		mkdir -p "$(dirname "$BAK/${2:1}")"
-		ln "$HOME/$2" "$BAK/${2:1}"
+	local SRC="$1"
+	local DST="$2"
+	
+	shift
+	shift
+	
+	## Stop here, if the destination file is on the no-fly list.
+	if grep \
+		--fixed-strings --line-regexp \
+		"$DST" \
+		"$HOME/.dot/not" \
+		>/dev/null 2>&1
+	then
+		return
 	fi
 	
-	mkdir -p "$(dirname "$HOME/${2:1}")"
+	## Make a backup of the destination file, if it already exists
+	if [ -e "$HOME/$DST" ] ; then
+		mkdir -p "$(dirname "$BAK/${DST:1}")"
+		ln "$HOME/$DST" "$BAK/${DST:1}"
+	fi
+	
+	## Create the directory for the destination file
+	mkdir -p "$(dirname "$HOME/$DST")"
+	
+	## Execute the passed command if the source and destination files differ
+	## (so the backup hard links make sense)
+	if ! cmp -s "$SRC" "$HOME/$DST" ; then
+		rm "$HOME/$DST"
+		"$@" "$SRC" "$HOME/$DST"
+	fi
 }
 
+
 newCopy() {
-	newPreparation "$1" "$2"
-	cp "$DOT_DIR/$1" "$HOME/$2"
+	newPreparation "$1" "$2" cp
 }
 
 
 newLink() {
-	newPreparation "$1" "$2"
-	ln -fs "$DOT_DIR/$1" "$HOME/$2"
+	newPreparation "$1" "$2" ln -fs
 }
 
 
 ## Create backups
-BAK="$HOME/.dotback/$(date "+%F_%T")"
-ls "$HOME/.dotback" -r | awk 'NR>10' | xargs rm
+BAK="$HOME/.dot/backup/$(date "+%F_%T")"
+
+if [ -d "$HOME/.dot/backup" ] ; then
+	ls "$HOME/.dot/backup" -r | awk "NR>10" | xargs --no-run-if-empty rm
+fi
 
 
 case "$S_DOMAIN" in
@@ -45,19 +73,23 @@ esac
 
 
 ## Create directories
-find dotfiles -type f | while read file ; do
-	newCopy "$file" ".$file"
-	sed -i -e "s#--DOT_DIR--#$DOT_DIR#g" "$HOME/.$file"
+find dotfiles -type f | while read SRC ; do
+	DST=".${SRC:9}"
+	sed -e "s#--DOT_DIR--#$DOT_DIR#g" <"$SRC" >"$HOME/.dot/tmp"
+	newCopy "$HOME/.dot/tmp" "$DST"
 done
 
+rm "$HOME/.dot/tmp"
 
-## Setup console
+
+## ==== Setup programms ========================================================
+## -- Console ------------------------------------------------------------------
 newLink "share/console_setup" ".profile"         ## interactive & login
 newLink "share/console_setup" ".bashrc$rbg_fix"  ## interactive & not login
 newLink "share/console_setup" ".zshenv"          ## allways
 
 
-## Setup nano
+## -- nano ---------------------------------------------------------------------
 nanorc update
 
 if type i3-msg >/dev/null ; then
