@@ -16,6 +16,16 @@ export LC_MESSAGES="C"
 ## yyyy-mm-dd hh:mm date/time output
 export LC_TIME="$(locale -a | grep -x "en_DK.utf8" || echo "C")"
 
+## Unset all the other variables
+unset LC_MONETARY
+unset LC_ADDRESS
+unset LC_TELEPHONE
+unset LC_NAME
+unset LC_MEASUREMENT
+unset LC_IDENTIFICATION
+unset LC_NUMERIC
+unset LC_PAPER
+
 
 ## bash/zsh history
 export HISTCONTROL="ignoredups:erasedups"  ## bash
