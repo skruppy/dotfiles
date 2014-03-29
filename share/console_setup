@@ -1,5 +1,13 @@
+#!/bin/bash
+
 ## non-interactive shells shall not pass
-[[ $- != *i* ]] && return
+case "$-" in
+	*i*)
+	;;
+	*)
+		return
+	;;
+esac
 
 
 ## == Variable definitions
@@ -36,9 +44,11 @@ if [ "$S_ENV_OK" != "y" ] ; then
 	if [ -f "$HOME/.dotdir" ] ; then
 		export DOT_DIR="$(cat "$HOME/.dotdir")"
 		export PATH="$DOT_DIR/bin:$PATH"
+	else
+		return
 	fi
 	
-	source "$DOT_DIR/share/variables.sh"
+	. "$DOT_DIR/share/variables.sh"
 	
 	case "$S_DOMAIN" in
 		"fs.lmu.de"|*".fs.lmu.de")
@@ -63,8 +73,8 @@ case "$S_DOMAIN" in
 		;;
 esac
 
-source "$DOT_DIR/share/aliases"
-source "$DOT_DIR/share/bash_promt"
+. "$DOT_DIR/share/aliases"
+. "$DOT_DIR/share/bash_promt"
 
 case "$S_ACT_SHELL" in
 	"bash")
@@ -107,32 +117,32 @@ case "$S_ACT_SHELL" in
 		# active. Only then are the values from $terminfo valid.
 		if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} ))
 		then
-			function zle-line-init () {
+			zle_line_init() {
 				printf '%s' "${terminfo[smkx]}"
 			}
 			
-			function zle-line-finish () {
+			zle_line_finish() {
 				printf '%s' "${terminfo[rmkx]}"
 			}
 			
-			zle -N zle-line-init
-			zle -N zle-line-finish
+			zle -N zle_line_init
+			zle -N zle_line_finish
 		fi
 		
 		
-		up-line-or-local-history() {
-			zle set-local-history 1
-			zle up-line-or-history
-			zle set-local-history 0
+		up_line_or_local_history() {
+			zle set_local_history 1
+			zle up_line_or_history
+			zle set_local_history 0
 		}
-		zle -N up-line-or-local-history
+		zle -N up_line_or_local_history
 		
-		down-line-or-local-history() {
-			zle set-local-history 1
-			zle down-line-or-history
-			zle set-local-history 0
+		down_line_or_local_history() {
+			zle set_local_history 1
+			zle down_line_or_history
+			zle set_local_history 0
 		}
-		zle -N down-line-or-local-history
+		zle -N down_line_or_local_history
 		
 		
 		setopt share_history

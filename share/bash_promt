@@ -2,18 +2,18 @@
 # This script creates a fancy promt for bash.
 
 
-function __git_ps1 {
+__git_ps1() {
 	# Do nothing, so no error will occur on systems without git
 	true
 }
 
 
-function commpilePromt {
+commpilePromt() {
 	# Calculate the remaining space, considering the length of invisible color
 	# codes passed as first argument
 	let pRemainingSpace=$COLUMNS-${#pLeftPart}-${#pRightPart}+${1}
 	
-	if [[ ${1} == 0 || "${pRemainingSpace}" -ge 0 ]]
+	if [ "${1}" = "0" -o "${pRemainingSpace}" -ge "0" ]
 	then
 		# If we have enough space left, fill it and return successfully
 		pFill="$(perl -e "print('─'x${pRemainingSpace});")"
@@ -29,14 +29,14 @@ ${pLineC}└─${pPromtC}>>${pNormalC} "
 }
 
 
-function precmd {
+precmd() {
 	## == Create a notice if last command failed
 	## This has to stay at the top, to get the right return value
 	local returncode=$?
 	
 	## Workaround: We need a character after the "\n" to be recognized by PS1,
 	## therefore we take the color code of the next line as our last bit.
-	if [[ "${returncode}" == 0 ]]
+	if [ "${returncode}" = "0" ]
 	then
 		pNotice="${pLineC}"
 	else

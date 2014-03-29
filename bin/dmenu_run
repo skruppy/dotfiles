@@ -1,4 +1,5 @@
 #!/bin/bash -i
+## bash is required for expand_aliases and lastpipe
 ## The script hast to be interpreted by a interactive bash, to get the alias
 ## definitions, hence the -i
 ## 
