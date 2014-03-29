@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+## Install everything using
+## wget https://raw.githubusercontent.com/Skrupellos/dotfiles/master/share/bootstrap-via-ssh | sh
+
+git clone ssh://git@github.com/Skrupellos/dotfiles.git
+
+exec dotfiles/bin/dotinstall

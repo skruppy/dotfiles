@@ -3,16 +3,6 @@
 
 set -e
 
-## Install everything using
-## wget https://raw.githubusercontent.com/Skrupellos/dotfiles/master/bin/dotinstall | bash
-if [ "$(basename "$0")" != "dotinstall" ] ; then
-	git clone ssh://git@github.com/Skrupellos/dotfiles.git
-	#git clone https://github.com/Skrupellos/dotfiles.git
-	dotfiles/bin/dotinstall
-	
-	exit
-fi
-
 ## Set the pwd to the project root, so we can savely use relative path names
 cd "$(dirname "$0")/.."
 export DOT_DIR="$(pwd)"
