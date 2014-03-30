@@ -1,0 +1,91 @@
+#!/bin/sh
+
+
+
+set -e
+
+CMD=()
+FILES=()
+
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@" >&2
+	fi
+	echo "Usage: $(basename "$0") [OPTIONS] CMD..." >&2
+	echo "" >&2
+	echo "  Executes CMD if some files change. \$n placeholders in CMD will be replaced" >&2
+	echo "  by the nth FILE." >&2
+	echo "" >&2
+	echo "OPTIONS" >&2
+	echo "  -f FILE  --file FILE  Files or directories to watch" >&2
+	echo "  -h       --help       Display this message" >&2
+	echo "" >&2
+	echo "EXAMPLE" >&2
+	echo "  $(basename "$0") -f example.tex -f images/ pdflatex '\$1'" >&2
+	
+	test "$#" -eq 0
+	exit "$?"
+}
+
+
+template() {
+	TEXT="$(echo "$1" | sed -e "s#'#'\"'\"'#g;s#\$\([[:digit:]]*\)#'\"\$\1\"'#g")"
+	shift
+ 	echo "$(eval "echo '$TEXT'")"
+}
+
+
+## ==== Arguments ==============================================================
+## -- Options ------------------------------------------------------------------
+while [ "$#" -gt 0 ] ; do
+	case "$1" in
+		"-f"|"--file")
+			FILES+=("$2")
+			shift
+			shift
+		;;
+		"-h"|"--help")
+			printUsage
+		;;
+		"-"*)
+			printUsage "Unknown argument '$1'"
+		;;
+		*)
+			break
+		;;
+	esac
+done
+
+
+## -- Command ------------------------------------------------------------------
+while [ "$#" -gt 0 ] ; do
+	CMD+=("$(template "$1" "${FILES[@]}")")
+	shift
+done
+
+
+## -- Check them ---------------------------------------------------------------
+if [ "${#FILES[@]}" = 0 ] ; then
+	printUsage "Missing files"
+fi
+
+if [ "${#CMD[@]}" = 0 ] ; then
+	printUsage "Missing command"
+fi
+
+
+## ==== Wait loop ==============================================================
+while inotifywait \
+	--recursive \
+	--event modify,delete_self,delete \
+	--quiet \
+	"${FILES[@]}"
+do
+	echo ""
+	echo "########################################"
+	echo "### $(date)"
+	echo "########################################"
+	
+	"${CMD[@]}"
+done
