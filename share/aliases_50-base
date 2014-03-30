@@ -5,12 +5,13 @@ alias fgrepf="fgrep --color=auto"
 alias egrep="egrep  --color=always"
 alias egrepf="egrep --color=auto"
 
-alias ll="ls  -hlv  --color=always --group-directories-first"
-alias llf="ls -hlv  --color=auto   --group-directories-first"
-alias l="ls   -hlv  --color=always --group-directories-first"
-alias lf="ls  -hlv  --color=auto   --group-directories-first"
-alias la="ls  -hlva --color=always --group-directories-first"
-alias laf="ls -hlva --color=auto   --group-directories-first"
+alias ls="ls --color=auto"
+
+alias lf="ls -hlv --group-directories-first"
+alias  l="lf --color=always"
+
+alias laf="lf -a"
+alias  la="laf --color=always"
 
 ## Shortcuts for most used commands
 alias ..="cd .."
