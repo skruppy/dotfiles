@@ -3,14 +3,6 @@
 
 set -e
 
-## Set the pwd to the project root, so we can savely use relative path names
-cd "$(dirname "$0")/.."
-export DOT_DIR="$(pwd)"
-mkdir -p "$HOME/.dot"
-echo "$DOT_DIR" >"$HOME/.dot/dir"
-
-. share/console_setup
-
 
 newPreparation() {
 	local SRC="$1"
@@ -29,6 +21,7 @@ newPreparation() {
 		return
 	fi
 	
+	
 	## Make a backup of the destination file, if it already exists
 	if [ -e "$HOME/$DST" ] ; then
 		mkdir -p "$(dirname "$BAK/${DST:1}")"
@@ -41,7 +34,10 @@ newPreparation() {
 	## Execute the passed command if the source and destination files differ
 	## (so the backup hard links make sense)
 	if ! cmp -s "$SRC" "$HOME/$DST" ; then
-		rm "$HOME/$DST"
+		if [ -e "$HOME/$DST" ] ; then
+			rm "$HOME/$DST"
+		fi
+		
 		"$@" "$SRC" "$HOME/$DST"
 	fi
 }
@@ -56,12 +52,22 @@ newLink() {
 	newPreparation "$1" "$2" ln -fs
 }
 
+## Set the pwd to the project root, so we can savely use relative path names
+cd "$(dirname "$0")/.."
+export DOT_DIR="$(pwd)"
+mkdir -p "$HOME/.dot"
+echo "$DOT_DIR" >"$HOME/.dot/dir"
+
+. share/console_setup
+
 
 ## Create backups
 BAK="$HOME/.dot/backup/$(date "+%F_%T")"
 
 if [ -d "$HOME/.dot/backup" ] ; then
-	ls "$HOME/.dot/backup" -r | awk "NR>10" | xargs --no-run-if-empty rm
+	cd "$HOME/.dot/backup"
+	ls -r | awk "NR>10" | xargs --no-run-if-empty rm -R
+	cd "$(dirname "$0")/.."
 fi
 
 
