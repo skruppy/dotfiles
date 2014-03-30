@@ -48,7 +48,7 @@ if [ -z "$DOT_DIR" ] ; then
 		return
 	fi
 	
-	for f in "$DOT_DIR/share/variables"*.sh ; do
+	for f in "$DOT_DIR/share/variables-sh_"* ; do
 		. "$f"
 	done
 	
@@ -74,8 +74,8 @@ case "$S_DOMAIN" in
 esac
 
 for f in \
-	"$DOT_DIR/share/aliases"* \
-	"$DOT_DIR/share/promt"*.sh
+	"$DOT_DIR/share/aliases_"* \
+	"$DOT_DIR/share/promt-sh_"*
 do
 	. "$f"
 done
