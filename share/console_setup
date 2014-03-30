@@ -48,7 +48,9 @@ if [ -z "$DOT_DIR" ] ; then
 		return
 	fi
 	
-	. "$DOT_DIR/share/variables.sh"
+	for f in "$DOT_DIR/share/variables"*.sh ; do
+		. "$f"
+	done
 	
 	case "$S_DOMAIN" in
 		"fs.lmu.de"|*".fs.lmu.de")
@@ -71,8 +73,12 @@ case "$S_DOMAIN" in
 		;;
 esac
 
-. "$DOT_DIR/share/aliases"
-. "$DOT_DIR/share/bash_promt"
+for f in \
+	"$DOT_DIR/share/aliases"* \
+	"$DOT_DIR/share/promt"*.sh
+do
+	. "$f"
+done
 
 case "$S_ACT_SHELL" in
 	"bash")
