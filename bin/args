@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -e
+
+echo "$# arguments:"
+for f in "$@" ; do
+	echo "-->$f<--"
+done
