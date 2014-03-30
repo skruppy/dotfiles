@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=xmodmap
+Comment=Modifies keymaps and pointer button mappings in this X session.
+Type=Application
+Exec=xmodmap .Xmodmap

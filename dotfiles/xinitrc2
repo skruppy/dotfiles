@@ -1,24 +1,9 @@
 #!/bin/sh
 
-run() {
-	if type "$1" >/dev/null ; then
-		"$@" &
-		return 0
-	else
-		return 1
-	fi
-}
-
 xrdb -merge ~/.Xresources
-run urxvtd -q -f -o
-run xmodmap ~/.Xmodmap
-run sc auto
-run dex -a -e i3
+urxvtd -q -f -o &
+dex -a -e i3 &
 
-run opera
-run thunderbird
-run pidgin
-run urxvtc
 
 if [ -d /etc/X11/xinit/xinitrc.d ]; then
 	for f in /etc/X11/xinit/xinitrc.d/*; do

@@ -88,6 +88,21 @@ done
 rm "$HOME/.dot/tmp"
 
 
+for f in \
+	opera-browser \
+	thunderbird \
+	pidgin \
+	urxvtc
+do
+	SRC="/usr/share/applications/$f.desktop"
+	DST=".config/autostart/$f.desktop"
+	
+	if [ -e "$SRC" ] ; then
+		newLink "$SRC" "$DST"
+	fi
+done
+
+
 ## ==== Setup programms ========================================================
 ## -- Console ------------------------------------------------------------------
 newLink "share/console_setup" ".profile"         ## interactive & login

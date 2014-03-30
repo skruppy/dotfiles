@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=screen config
+Comment=Automatically changes mode and position of the secondary screen output.
+Type=Application
+Exec=sc auto
