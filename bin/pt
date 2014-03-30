@@ -2,4 +2,5 @@
 
 set -e
 
-ps -fHN --ppid=2 | grep -vE "^root         2"
+echo "UID        PID  PPID  C STIME TTY          TIME CMD" >&2
+ps -fHN --ppid=2 --ppid=$$ --ppid=$PPID | tail -n+3 | grep --color=auto "${@:-}"
