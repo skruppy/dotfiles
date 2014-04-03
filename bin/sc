@@ -102,7 +102,7 @@ fi
 
 
 ## Start a log file if a) root and b) verbose
-if [ "$UID" -eq "0" -a "$verbose" = "yes" ] ; then
+if [ "$(id -u)" -eq "0" -a "$verbose" = "yes" ] ; then
 	logFile="/var/log/$(basename "$0").log"
 	
 	log ""
@@ -113,7 +113,7 @@ fi
 
 
 ## Fix a headless root by giving her access to skrupellos's X session
-if [ "$UID" -eq "0" ] ; then
+if [ "$(id -u)" -eq "0" ] ; then
 	export XAUTHORITY="${XAUTHORITY:-/home/skrupellos/.Xauthority}"
 fi
 

@@ -1,5 +1,5 @@
-#!/bin/sh
-
+#!/bin/bash
+## bash is required for arrays
 
 
 set -e
