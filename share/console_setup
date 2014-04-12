@@ -175,19 +175,19 @@ then
 	if \
 		[ -z "$DBUS_SESSION_BUS_ADDRESS" ] && \
 		[ -n "$DISPLAY" ] && \
-		type dbus-launch >/dev/null
+		type dbus-launch >/dev/null 2>&1
 	then
 	  eval $(dbus-launch --exit-with-session)
 	fi
 	
 	## -- Start key agents -----------------------------------------------------
-	if command -v gnome-keyring-daemon >/dev/null && [ -n "$DISPLAY" ]
+	if type gnome-keyring-daemon >/dev/null 2>&1 && [ -n "$DISPLAY" ]
 	then
 		eval "$(gnome-keyring-daemon --start)"
 		export GNOME_KEYRING_CONTROL
 		export SSH_AUTH_SOCK
 		export GPG_AGENT_INFO
-	elif command -v gpg-agent >/dev/null
+	elif type gpg-agent >/dev/null 2>&1
 	then
 		if [ -f "$HOME/.gpg-agent-info" ] ; then
 			. "$HOME/.gpg-agent-info"

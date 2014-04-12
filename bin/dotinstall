@@ -114,18 +114,18 @@ nanorc update
 
 
 ## -- git ----------------------------------------------------------------------
-if type git >/dev/null ; then
+if type git >/dev/null 2>&1 ; then
 	echo git config --global user.name "..."
 	echo git config --global user.email "..."
 	git config --global push.default "simple"
 	git config --global color.ui "auto"
 
-	if type kdiff3 >/dev/null ; then
+	if type kdiff3 >/dev/null 2>&1 ; then
 		git config --global merge.tool "kdiff3"
 	fi
 fi
 
 ## -- i3 -----------------------------------------------------------------------
-if type i3-msg >/dev/null ; then
+if type i3-msg >/dev/null 2>&1 ; then
 	i3-msg --quiet reload
 fi
