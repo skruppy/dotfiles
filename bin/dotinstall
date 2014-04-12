@@ -54,11 +54,10 @@ newLink() {
 
 ## Set the pwd to the project root, so we can savely use relative path names
 cd "$(dirname "$0")/.."
-export DOT_DIR="$(pwd)"
 mkdir -p "$HOME/.dot"
-echo "$DOT_DIR" >"$HOME/.dot/dir"
+echo "$(pwd)" >"$HOME/.dot/dir"
 
-. share/console_setup
+DOT_FAKE_DASH=i . share/console_setup
 
 
 ## Create backups
@@ -67,7 +66,7 @@ BAK="$HOME/.dot/backup/$(date "+%F_%T")"
 if [ -d "$HOME/.dot/backup" ] ; then
 	cd "$HOME/.dot/backup"
 	ls -r | awk "NR>10" | xargs --no-run-if-empty rm -R
-	cd "$(dirname "$0")/.."
+	cd "$DOT_DIR"
 fi
 
 
