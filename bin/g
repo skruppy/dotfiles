@@ -1,0 +1,17 @@
+#!/bin/zsh
+# clip2goog - google for selected text
+# http://chneukirchen.org/dotfiles/bin/clip2goog
+# by chneukirchen downloaded 20110713
+
+set -e
+
+selurl() {
+  setopt localoptions extendedglob
+  sel="$(xclip -out)"
+  LC_ALL=C input=( ${(s::)sel} )   # work on bytes
+  print ${(j::)input/(#b)([^A-Za-z0-9_.!~*\'\(\)-])/%$(([##16]#match))}
+}
+
+${BROWSER:-firefox} \
+	"http://www.google.com/search?q=$(selurl)&hl=en&lr=lang_en|lang_de&safe=off" \
+	>/dev/null 2>&1 &
