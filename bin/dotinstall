@@ -129,3 +129,19 @@ fi
 if type i3-msg >/dev/null 2>&1 ; then
 	i3-msg --quiet reload
 fi
+
+
+## -- latexmk ------------------------------------------------------------------
+for prog in \
+	zathura \
+	okular \
+	evince \
+	mupdf \
+	xpdf \
+	acroread
+do
+	if type "$prog" >/dev/null 2>&1 ; then
+		echo "\$pdf_previewer = \"$prog %S\";" >>~/.latexmkrc
+		break
+	fi
+done
