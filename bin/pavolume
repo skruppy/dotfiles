@@ -4,8 +4,9 @@ set -e
 
 dump="$(pacmd dump)"
 device="$(echo "$dump" | grep -E "^set-default-sink " | cut -f 2- -d " ")"
+step="3277"
 
-function status() {
+status() {
 	if echo "$dump" | grep -x "set-sink-mute $device no" >/dev/null ; then
 		rawVol="$(echo "$dump" | sed -n 's/set-sink-volume '${device}' \(.*\)/\1/p')"
 		echo "$(( $rawVol * 100 / 0xFFFF ))%"
@@ -14,17 +15,40 @@ function status() {
 	fi
 }
 
+changeVolume() {
+	local DIR="$1"
+	local CMP="$2"
+	local MAX="$3"
+	
+	echo "$dump" | \
+	awk --non-decimal-data \
+'$1~/set-sink-volume/{'\
+'	if ($2~/'$device'/) {'\
+'		if ($3'"$DIR $step $CMP $MAX"') {'\
+'			system ("pactl "$1" '$device' "'$MAX')'\
+'		}'\
+'		else {'\
+'			system ("pactl "$1" '$device' "$3'"$DIR $step"')'\
+'		}'\
+'	}'\
+'}'
+}
+
 case "$1" in
-	"up")    # increase volume by 1000
-		echo "$dump" | awk --non-decimal-data '$1~/set-sink-volume/{if ($2~/'${device}'/) {if ($3+1638 > 65535) {system ("pactl "$1" '${device}' "65535)} else {system ("pactl "$1" '${device}' "$3+1638)}}}'
+	"up")
+		changeVolume "+" ">" "65535"
 		killall --quiet -USR1 i3status
 		;;
-	"down")  # decrease volume by 1000
-		echo "$dump" | awk --non-decimal-data '$1~/set-sink-volume/{if ($2~/'${device}'/) {if ($3-1638 < 0) {system ("pactl "$1" '${device}' "0)} else {system ("pactl "$1" '${device}' "$3-1638)}}}'
+	"down")
+		changeVolume "-" "<" "0"
 		killall --quiet -USR1 i3status
 		;;
 	"mute")  # toggle mute
-		echo "$dump" | awk --non-decimal-data '$1~/set-sink-mute/{if ($2~/'${device}'/) {system ("pactl "$1" '${device}' "($3=="yes"?"no":"yes"))}}'
+		if echo "$dump" | grep -x "set-sink-mute $device yes" >/dev/null ; then
+			pactl "set-sink-mute" "$device" "no"
+		else
+			pactl "set-sink-mute" "$device" "yes"
+		fi
 		killall --quiet -USR1 i3status
 		;;
 	*)
