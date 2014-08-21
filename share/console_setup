@@ -32,6 +32,12 @@ case "$S_ACT_SHELL" in
 		then S_LOGIN="y"
 		else S_LOGIN="n"
 		fi
+		
+		if [ -f /etc/zsh/zprofile ] ; then . /etc/zsh/zprofile ; fi
+		if [ -f /etc/zsh/zshrc ] ; then . /etc/zsh/zshrc ; fi
+		if [ -f /etc/zsh/zlogin ] ; then . /etc/zsh/zlogin ; fi
+		
+		setopt NO_RCS
 		;;
 	*)
 		S_LOGIN="y"
