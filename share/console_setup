@@ -204,7 +204,12 @@ then
 		fi
 		
 		if [ -z "$SSH_AUTH_SOCK" ] ; then
+			if [ -n "$SSH_CONNECTION" ] ; then
+				export PINENTRY_USER_DATA="USE_CURSES=1"
+			fi
+			
 			gpg-agent --daemon --enable-ssh-support >"$HOME/.gpg-agent-info"
+			. "$HOME/.gpg-agent-info"
 		fi
 	fi
 
