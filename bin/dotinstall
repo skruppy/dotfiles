@@ -104,9 +104,9 @@ done
 
 ## ==== Setup programms ========================================================
 ## -- Console ------------------------------------------------------------------
-newLink "share/console_setup" ".profile"         ## interactive & login
-newLink "share/console_setup" ".bashrc$rbg_fix"  ## interactive & not login
-newLink "share/console_setup" ".zshenv"          ## allways
+newLink "$DOT_DIR/share/console_setup" ".profile"         ## interactive & login
+newLink "$DOT_DIR/share/console_setup" ".bashrc$rbg_fix"  ## interactive & not login
+newLink "$DOT_DIR/share/console_setup" ".zshenv"          ## allways
 
 
 ## -- nano ---------------------------------------------------------------------
