@@ -52,6 +52,16 @@ newLink() {
 	newPreparation "$1" "$2" ln -fs
 }
 
+
+
+setGitCfg() {
+	if ! git config --global "$1" >/dev/null ; then
+		git config --global "$1" "$2"
+	fi
+}
+
+
+
 ## Set the pwd to the project root, so we can savely use relative path names
 cd "$(dirname "$0")/.."
 mkdir -p "$HOME/.dot"
@@ -105,9 +115,9 @@ done
 
 ## ==== Setup programms ========================================================
 ## -- Console ------------------------------------------------------------------
-newLink "share/console_setup" ".profile"         ## interactive & login
-newLink "share/console_setup" ".bashrc$rbg_fix"  ## interactive & not login
-newLink "share/console_setup" ".zshenv"          ## allways
+newLink "$DOT_DIR/share/console_setup" ".profile"         ## interactive & login
+newLink "$DOT_DIR/share/console_setup" ".bashrc$rbg_fix"  ## interactive & not login
+newLink "$DOT_DIR/share/console_setup" ".zshenv"          ## allways
 
 
 ## -- nano ---------------------------------------------------------------------
@@ -118,11 +128,11 @@ nanorc update
 if type git >/dev/null 2>&1 ; then
 	echo git config --global user.name "..."
 	echo git config --global user.email "..."
-	git config --global push.default "simple"
-	git config --global color.ui "auto"
-
+	
+	setGitCfg push.default "simple"
+	setGitCfg color.ui "auto"
 	if type kdiff3 >/dev/null 2>&1 ; then
-		git config --global merge.tool "kdiff3"
+		setGitCfg merge.tool "kdiff3"
 	fi
 fi
 

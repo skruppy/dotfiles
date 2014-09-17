@@ -27,9 +27,9 @@ printUsage() {
 	echo "TIME" >&2
 	echo "  the total waiting time is the accumulation of seconds, minutes and hours" >&2
 	echo "  statements or their abbreviation. Examples:" >&2
-	echo "    * 2 minutes 5 seconds" >&2
-	echo "    * 4 h" >&2
-	echo "    * 1 minute 30 s" >&2
+	echo "    * $(basename "$0") 2 minutes 5 seconds" >&2
+	echo "    * $(basename "$0") 4 h" >&2
+	echo "    * $(basename "$0") 1 minute 30 s" >&2
 	exit ${1:-1}
 }
 

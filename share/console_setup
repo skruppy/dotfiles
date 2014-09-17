@@ -32,6 +32,12 @@ case "$S_ACT_SHELL" in
 		then S_LOGIN="y"
 		else S_LOGIN="n"
 		fi
+		
+		if [ -f /etc/zsh/zprofile ] ; then . /etc/zsh/zprofile ; fi
+		if [ -f /etc/zsh/zshrc ] ; then . /etc/zsh/zshrc ; fi
+		if [ -f /etc/zsh/zlogin ] ; then . /etc/zsh/zlogin ; fi
+		
+		setopt NO_RCS
 		;;
 	*)
 		S_LOGIN="y"
@@ -180,17 +186,21 @@ then
 		[ -n "$DISPLAY" ] && \
 		type dbus-launch >/dev/null 2>&1
 	then
-	  eval $(dbus-launch --exit-with-session)
+		eval $(dbus-launch --exit-with-session | tee /tmp/buuuus)
+		export DBUS_SESSION_BUS_ADDRESS
+		export DBUS_SESSION_BUS_PID
+		export DBUS_SESSION_BUS_WINDOWID
 	fi
 	
 	## -- Start key agents -----------------------------------------------------
+	
 	if type gnome-keyring-daemon >/dev/null 2>&1 && [ -n "$DISPLAY" ]
 	then
 		eval "$(gnome-keyring-daemon --start)"
 		export GNOME_KEYRING_CONTROL
 		export SSH_AUTH_SOCK
 		export GPG_AGENT_INFO
-	elif type gpg-agent >/dev/null 2>&1
+	elif type gpg-agent >/dev/null 2>&1 && [ -n "$DISPLAY" ]
 	then
 		if [ -f "$HOME/.gpg-agent-info" ] ; then
 			. "$HOME/.gpg-agent-info"
@@ -202,7 +212,12 @@ then
 		
 		if [ -z "$SSH_AUTH_SOCK" ] ; then
 			gpg-agent --daemon --enable-ssh-support >"$HOME/.gpg-agent-info"
+			. "$HOME/.gpg-agent-info"
 		fi
+	elif type ssh-agent >/dev/null 2>&1 
+	then
+		ssh-agent >"$HOME/.ssh-agent-info"
+		. "$HOME/.ssh-agent-info"
 	fi
 
 ## ==== Every time on interactive non-login shells =============================
