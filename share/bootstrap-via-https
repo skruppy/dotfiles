@@ -3,7 +3,7 @@
 set -e
 
 ## Install everything using
-## wget https://raw.githubusercontent.com/Skrupellos/dotfiles/master/share/bootstrap-via-https | sh
+## wget -O - https://raw.githubusercontent.com/Skrupellos/dotfiles/master/share/bootstrap-via-https | sh
 
 git clone https://github.com/Skrupellos/dotfiles.git
 
