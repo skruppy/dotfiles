@@ -21,6 +21,7 @@ printUsage() {
 	echo "  -f FILE  --file FILE       Change the default alarm sound to FILE" >&2
 	echo "  -p CMD   --player CMD      Change the default audio player to CMD" >&2
 	echo "  -c CMD   --msg-cmd CMD     Change the default notification command to CMD" >&2
+	echo "  -t       --test            Test the sound" >&2
 	echo "  -h       --help            Display this message" >&2
 	echo "" >&2
 	echo "TIME" >&2
