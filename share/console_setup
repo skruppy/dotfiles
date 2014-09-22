@@ -203,17 +203,35 @@ then
 	fi
 	
 	## -- Start key agents -----------------------------------------------------
-	
-	if type gnome-keyring-daemon >/dev/null 2>&1 && [ -n "$DISPLAY" ]
+	## Keychain
+	## (*) PAM support only with my pamkey script
+	## (+) Prevent multiple instances
+	## (+) ECDSA support
+	if \
+		type keychain >/dev/null 2>&1 && \
+		eval "$(\
+			keychain --query --quiet | grepf . | sed 's/^/export /' || \
+			echo "return 1" \
+		)"
 	then
-		eval "$(gnome-keyring-daemon --start)"
+		## NOP
+	## Gnome keyring:
+	## (-) No ECDSA
+	## (*) Used by nm-applet and thunderbird
+	## (+) Has out of the box PAM support
+	elif type gnome-keyring-daemon >/dev/null 2>&1 && [ -n "$DISPLAY" ] ; then
+		eval "$(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)"
 		export GNOME_KEYRING_CONTROL
 		export SSH_AUTH_SOCK
 		export GPG_AGENT_INFO
-	elif type gpg-agent >/dev/null 2>&1 && [ -n "$DISPLAY" ]
-	then
+	## PGP agent
+	## (-) Pin entry shows up on "random" places, which makes it unusable in a
+	##     multi session per user environment
+	## (*) PAM support only with envoy
+	## (-) Doesn't prevent multiple instances
+	elif type gpg-agent >/dev/null 2>&1 && [ -n "$DISPLAY" ] ; then
 		if [ -f "$HOME/.gpg-agent-info" ] ; then
-			. "$HOME/.gpg-agent-info"
+			source "$HOME/.gpg-agent-info"
 			
 			if [ ! -O "$SSH_AUTH_SOCK" ] ; then
 				unset SSH_AUTH_SOCK
@@ -222,14 +240,28 @@ then
 		
 		if [ -z "$SSH_AUTH_SOCK" ] ; then
 			gpg-agent --daemon --enable-ssh-support >"$HOME/.gpg-agent-info"
-			. "$HOME/.gpg-agent-info"
+			source "$HOME/.gpg-agent-info"
 		fi
-	elif type ssh-agent >/dev/null 2>&1 
-	then
-		ssh-agent >"$HOME/.ssh-agent-info"
-		. "$HOME/.ssh-agent-info"
+	## SSH agent
+	## (+) ECDSA support
+	## (-) PAM support only with pam_ssh, which doesn't load all keys
+	##     (version 1) or desn't support ECDSA (Version 2)
+	## (-) envoy's PAM doesn't load ssh keys at all
+	## (-) Doesn't prevent multiple instances
+	elif type ssh-agent >/dev/null 2>&1 ; then
+		if [ -f "$HOME/.ssh-agent-info" ] ; then
+			source "$HOME/.ssh-agent-info"
+			
+			if [ ! -O "$SSH_AUTH_SOCK" ] ; then
+				unset SSH_AUTH_SOCK
+			fi
+		fi
+		
+		if [ -z "$SSH_AUTH_SOCK" ] ; then
+			ssh-agent >"$HOME/.ssh-agent-info"
+			source "$HOME/.ssh-agent-info"
+		fi
 	fi
-
 ## ==== Every time on interactive non-login shells =============================
 else
 	true
