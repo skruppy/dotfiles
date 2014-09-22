@@ -1,0 +1,39 @@
+#!/bin/sh
+
+## Starts ssh-agent and gpg-agent using keychain and loads ssh keys in
+## login-keys.d using the login password. Save this script as e.g.
+## /usr/local/sbin/pamkey, make it executable and push the following line onto
+## the auth PAM stack in /etc/pam.d/system-login:
+## auth        optional    pam_exec.so expose_authtok /usr/local/sbin/pamkey
+
+set -e
+
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bin"
+
+
+if [ "$(id -u)" = "0" ] ; then
+	## Test the existance of the user
+	getent passwd "${PAM_USER}" >/dev/null
+	
+	exec su "${PAM_USER}" -c "$(realpath "${BASH_SOURCE[0]}")"
+else
+	## Exit successfully if the user has not login-keys.d
+	DOTDIR="$HOME/.ssh/login-keys.d"
+	test -d "$DOTDIR" || exit 0
+	
+	## Find those keys, pam_ssh would/shoud find
+	KEYS_TEXT="$(
+		find "$DOTDIR" \
+		\( -type f -o -type l \) \
+		\! -name '*.disabled' \! -name '*.frozen' \! -name '*.pub' \
+		-exec realpath {} + \
+	)"
+	
+	## Hence keychain reads from STDIN and pipes create subshells, we have to
+	## use a variable like this:
+	readarray -t KEYS <<< "$KEYS_TEXT"
+	
+	## Add those keys. The password is provided from STDIN via pam_exec's
+	## expose_authtok option
+	keychain --nogui --quiet --ignore-missing "${KEYS[@]}"
+fi
