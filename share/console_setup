@@ -49,6 +49,9 @@ esac
 if [ -z "$DOT_DIR" ] ; then
 	if [ -f "$HOME/.dot/dir" ] ; then
 		export DOT_DIR="$(cat "$HOME/.dot/dir")"
+		if type ruby >/dev/null 2>&1 ; then
+			PATH="$(ruby -rubygems -e 'puts Gem.user_dir')/bin:$PATH"
+		fi
 		export PATH="$DOT_DIR/bin:$PATH"
 	else
 		return
