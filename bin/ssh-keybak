@@ -1,0 +1,192 @@
+#!/bin/bash
+
+set -e
+
+
+printUsage() {
+	echo "Usage: $(basename "$0") [OPTIONS] KEY ..." >&2
+	echo "" >&2
+	echo "  creates a pdf containing the public/private key of the supplied ssh keys" >&2
+	echo "  in a human/machine readble form." >&2
+	echo "" >&2
+	echo "OPTIONS" >&2
+	echo "  -o,--output FILE    PDF file name (Default $(basename "$0").pdf)" >&2
+	echo "  -s,--scale FLOAT    Sets the QR code immage size (Default 0.8)" >&2
+	echo "  -v,--verbose        Be more chatty" >&2
+	echo "  -h,--help           Display this message" >&2
+	exit ${1:-1}
+}
+
+
+
+escTex() {
+	sed -E 's/([#$%^&_{}\-\\])/\\&/g' <<<$1
+}
+
+
+
+addKey() {
+	qrencode -t eps -o "$DIR/$1-priv.eps" <"$2"
+	qrencode -t eps -o "$DIR/$1-pub.eps"  <"$2.pub"
+	
+	cat >>"$TEX" <<EOF
+	\fancyhead[L]{Backup of \texttt{$(escTex "$2")}. Created $(date +"%Y-%m-%d %H:%M:%S").}
+	\section*{Private key}
+	\lstinputlisting{$2}
+	
+	\includegraphics[scale=$SIZE]{$1-priv.eps}
+	
+	
+	\section*{Public key}
+	\lstinputlisting{$2.pub}
+	
+	\includegraphics[scale=$SIZE]{$1-pub.eps}
+	\newpage
+	\setcounter{page}{1}
+EOF
+}
+
+
+
+compile() {
+	ARGS=(
+		"-file-line-error"
+		"-interaction=batchmode"
+		"$TEX"
+	)
+	
+	if $VERBOSE ; then
+		echo
+		xelatex "${ARGS[@]}"
+		echo
+	else
+		xelatex "${ARGS[@]}" >/dev/null
+	fi
+}
+
+
+
+## Check command line options
+if [ "$#" -eq "0" ] ; then
+	echo "No keys provided" >&2
+	printUsage
+fi
+
+
+## Parse command line options
+OUTPUT="$(basename "$0").pdf"
+KEYS=()
+SIZE=".8"
+VERBOSE="false"
+
+while [ "$#" -gt "0" ] ; do
+	case "$1" in
+		"-o"|"--output")
+			OUTPUT="$2"
+			shift
+		;;
+		"-s"|"--scale")
+			SIZE="$2"
+			shift
+		;;
+		"-v"|"--verbose")
+			VERBOSE="true"
+		;;
+		"-h"|"--help")
+			printUsage 0
+			# exit
+		;;
+		*)
+			KEY="$(readlink --canonicalize "${1%%.pub}")"
+			
+			if [ ! -f "$KEY" ] ; then
+				echo "There is no private key '$KEY'" >&2
+				printUsage
+			fi
+			
+			if [ ! -f "$KEY.pub" ] ; then
+				echo "There is no private key '$KEY.pub'" >&2
+				printUsage
+			fi
+			
+			KEYS+=( "$KEY" )
+		;;
+	esac
+	shift
+done
+
+
+## Create working directory
+DIR="$(mktemp --tmpdir --directory "$(basename "$0")-XXXXXXXXXX")"
+TEX="$DIR/backup.tex"
+
+
+## Create tex file
+cat >"$TEX" <<EOF
+\documentclass[parskip=full,a4]{scrartcl}
+
+\usepackage{geometry}
+\geometry{%
+	a4paper,%
+	margin=1.5cm,%
+	includehead,%
+	includefoot%
+}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage{fancyhdr}
+
+\fancyhead{}
+\fancyhead[R]{\thepage}
+\fancyfoot{}
+
+
+\lstset{
+	basicstyle=\footnotesize\ttfamily,
+	breaklines=true
+}
+
+\makeatletter
+\def\lst@lettertrue{\let\lst@ifletter\iffalse}
+\makeatother
+
+\pagestyle{fancy}
+
+\begin{document}
+EOF
+
+i=1
+for f in "${KEYS[@]}" ; do
+	if $VERBOSE ; then
+		echo "Adding key $f"
+	fi
+	
+	addKey "$i" "$f"
+	
+	let i=i+1
+done
+
+cat >>"$TEX" <<EOF
+\end{document}
+EOF
+
+
+## Compile tex to pdf
+(cd "$DIR" ; compile) || (
+	echo "Compiling tex failed!" >&2
+	echo "See buildlog ${TEX%%.tex}.log for more information" >&2
+	exit 1
+)
+
+
+## Copy pdf to its final destination
+cp "${TEX%%.tex}.pdf" "$OUTPUT"
+
+if $VERBOSE ; then
+	echo "Wrote to $OUTPUT"
+fi
+
+
+## Cleanup
+rm -R "$DIR"
