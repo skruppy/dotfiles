@@ -28,12 +28,15 @@ EOF
 
 case "$cmd" in
 	"poweroff"|"reboot"|"suspend"|"hibernate"|"hybrid-sleep")
-		systemctl "$cmd"
+		exec systemctl "$cmd"
 		;;
 	"exit")
-		i3-msg exit
+		exec i3-msg exit
 		;;
 	"lock")
-		i3lock
+		exec i3lock \
+			--pointer=win \
+			--tiling \
+			--image="$(ls /usr/local/share/lockscreens/* | sort -R | tail -1)"
 		;;
 esac

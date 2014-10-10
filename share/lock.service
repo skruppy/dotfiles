@@ -1,0 +1,11 @@
+[Unit]
+Description=Lock the screen on resume from suspend
+
+[Service]
+User=skrupellos
+Environment=DISPLAY=:0
+Type=forking
+ExecStart=/bin/sh -c 'exec i3lock --pointer=win --tiling --image="$(ls /usr/local/share/lockscreens/* | sort -R | tail -1)"'
+
+[Install]
+WantedBy=suspend.target hibernate.target lock.target sleep.target
