@@ -194,7 +194,7 @@ then
 		
 		if \
 			! [ "$DBUS_SESSION_BUS_PID" -gt 0 ] 2>&1 || \
-			! [ basename "$(readlink "/proc/$DBUS_SESSION_BUS_PID/exe")" == "dbus-daemon" ]
+			! [ "$(basename "$(readlink "/proc/$DBUS_SESSION_BUS_PID/exe")")" == "dbus-daemon" ]
 		then
 			dbus-launch --exit-with-session >"$HOME/.dbus-info"
 			source "$HOME/.dbus-info"
@@ -218,6 +218,7 @@ then
 		)"
 	then
 		## NOP
+		true
 	## Gnome keyring:
 	## (-) No ECDSA
 	## (*) Used by nm-applet and thunderbird
