@@ -155,9 +155,9 @@ bindsym $mod+Ctrl+L exec i3lock
 bindsym $mod+Ctrl+P exec dpower
 bindsym $mod+Ctrl+S exec dsc
 
-bindsym XF86AudioMute exec pavolume mute
-bindsym XF86AudioRaiseVolume exec pavolume up
-bindsym XF86AudioLowerVolume exec pavolume down
+bindsym XF86AudioMute exec pamixer --toggle-mute
+bindsym XF86AudioRaiseVolume exec pamixer --increase 5 --gamma 2.2
+bindsym XF86AudioLowerVolume exec pamixer --decrease 5 --gamma 2.2
 
 # The value will become the nearest multiple of 12.5
 bindsym XF86MonBrightnessUp exec xbacklight +10
