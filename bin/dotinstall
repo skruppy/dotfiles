@@ -88,7 +88,7 @@ esac
 
 
 ## Create directories
-find dotfiles -type f | while read SRC ; do
+find dotfiles -type f -o -type l | while read SRC ; do
 	DST=".${SRC:9}"
 	sed -e "s#--DOT_DIR--#$DOT_DIR#g" <"$SRC" >"$HOME/.dot/tmp"
 	chmod --reference "$SRC" "$HOME/.dot/tmp"

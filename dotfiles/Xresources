@@ -30,8 +30,19 @@ URxvt*iconFile: /usr/share/icons/oxygen/16x16/apps/utilities-terminal.png
 URxvt*urgentOnBell: true
 
 !! Open in browser
-URxvt*perl-ext-common:  default,matcher
+URxvt*perl-ext-common:  default,matcher,font-size
 URxvt*url-launcher:      /usr/bin/opera
 URxvt*matcher.button:   1
 URxvt*matcher.pattern.1:  \\B(/\\S+?):(\\d+)(?=:|$)
 URxvt*matcher.launcher.1: kate -l $2 $1
+
+!! Font size
+URxvt.keysym.C-Up:     perl:font-size:increase
+URxvt.keysym.C-Down:   perl:font-size:decrease
+URxvt.keysym.C-S-Up:   perl:font-size:incglobal
+URxvt.keysym.C-S-Down: perl:font-size:decglobal
+URxvt.keysym.C-0:      perl:font-size:reset
+
+!! Disable Shift + Ctrl input (required for font size change shortcuts)
+URxvt.iso14755: false
+URxvt.iso14755_52: false
