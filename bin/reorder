@@ -1,0 +1,93 @@
+#!/bin/bash
+
+set -e
+
+TMP="$(mktemp -d --suffix=-reorder)"
+baseDir=""
+touch "$TMP/order"
+
+## Check each file (name) to fit reorder's prerequests
+for path in "$@" ; do
+	file="$(basename "$path")"
+	dir="$(dirname "$path")"
+	dir="${dir:-.}"
+	strippedFile="$(sed -e 's#^[0-9][0-9]-##' <<<"$file")"
+	
+	## Prerequest 1: The file has to exist
+	if [ -e "$path" ] ; then
+		echo "'$strippedFile' is listed multiple times" >&2
+		exit 1
+	fi
+	
+	## Prerequest 2: Each file has to be in the same directoy
+	if [ -n "$baseDir" ] ; then
+		if [ "$dir" != "$baseDir" ] ; then
+			echo "'$path' is not in the same directory like the others ($dir)" >&2
+			exit 1
+		fi
+	else
+		baseDir="$dir"
+	fi
+	
+	## Prerequest 3: The prefixless filename has to be unique
+	if grep -x "$strippedFile" "$TMP/order" >/dev/null ; then
+		echo "'$strippedFile' is listed multiple times" >&2
+		exit 1
+	fi
+	
+	## Append the prefix less filename in the file which will be manually sorted
+	## by the user
+	echo "$strippedFile" >>"$TMP/order"
+	
+	## Save the old file name in a file named after the prefixless file name
+	echo "$file" >"$TMP/$strippedFile"
+done
+
+## Let the user reorder the files
+"${EDITOR-vim}" "$TMP/order"
+
+## Prefix all lines
+ordered="$(grep . "$TMP/order" | nl -s- -w2 -v0 -nrz)"
+
+
+## Postrequest 1: The reordered file must not contain any duplicates (like
+## Prereuest 3)
+if grep . "$TMP/order" | sort | uniq -d | grep . ; then
+	echo "These are duplicates" >&2
+	exit 1
+fi
+
+## Postrequest 2: All files have to be in the reorderd list after manual
+## intervention, none more, none less
+if [ "$(wc -l <<< "$ordered")" -ne "$#" ] ; then
+	echo "One is missing"
+	exit 1
+fi
+
+echo "$ordered" | while read newFile ; do
+	strippedFile="${newFile:3}"
+	oldFile="$(cat "$TMP/$strippedFile")"
+	
+	## Postrequest 3: The user is not allowed to change the filename or introduce new files
+	if [ ! -e "$TMP/$strippedFile" ] ; then
+		echo "'$newFile' is invalid" >&2
+		exit 1
+	fi
+	
+	## Postrequest 4: A file can't be renamed to an already existing file with the same name, which wasn't selected to reorder.
+	if [ "$oldFile" != "$newFile" -a -e "$baseDir/$newFile" ] ; then
+		echo "'$newFile' already exists" >&2
+		exit 1
+	fi
+done
+
+
+## Now reorder!
+echo "$ordered" | while read newFile ; do
+	strippedFile="${newFile:3}"
+	oldFile="$(cat "$TMP/$strippedFile")"
+	
+	if [ "$oldFile" != "$newFile" ] ; then
+		mv -n "$oldFile" "$newFile"
+	fi
+done
