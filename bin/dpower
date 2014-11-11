@@ -26,17 +26,4 @@ exit                            Request user instance exit
 lock                            Lock user instance
 EOF
 
-case "$cmd" in
-	"poweroff"|"reboot"|"suspend"|"hibernate"|"hybrid-sleep")
-		exec systemctl "$cmd"
-		;;
-	"exit")
-		exec i3-msg exit
-		;;
-	"lock")
-		exec i3lock \
-			--pointer=win \
-			--tiling \
-			--image="$(ls /usr/local/share/lockscreens/* | sort -R | tail -1)"
-		;;
-esac
+power "$cmd"

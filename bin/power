@@ -1,0 +1,44 @@
+#!/bin/bash
+## bash is required for lastpipe
+
+set -e
+
+
+printUsage() {
+	echo "Usage: $(basename "$0") ACTION" >&2
+	echo "" >&2
+	echo "ACTIONS"
+	echo "  poweroff                        Shut down and power-off the system" >&2
+	echo "  reboot                          Shut down and reboot the system" >&2
+	echo "  suspend                         Suspend the system" >&2
+	echo "  hibernate                       Hibernate the system" >&2
+	echo "  hybrid-sleep                    Hibernate and suspend the system" >&2
+	echo "  exit                            Request user instance exit" >&2
+	echo "  lock                            Lock user instance" >&2
+
+	exit ${1:-1}
+}
+
+
+if [ "$#" -ne 1 ] ; then
+	printUsage
+fi
+
+case "$1" in
+	"poweroff"|"reboot"|"suspend"|"hibernate"|"hybrid-sleep")
+		exec systemctl "$1"
+		;;
+	"exit")
+		exec i3-msg exit
+		;;
+	"lock")
+		exec i3lock \
+			--pointer=win \
+			--tiling \
+			--image="$(ls /usr/local/share/lockscreens/* | sort -R | head -1)"
+		;;
+	*)
+		echo "Unknow action"
+		printUsage
+		;;
+esac
