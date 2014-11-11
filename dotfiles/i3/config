@@ -163,6 +163,9 @@ bindsym XF86AudioLowerVolume exec pamixer --decrease 5 --gamma 2.2
 bindsym XF86MonBrightnessUp exec xbacklight +10
 bindsym XF86MonBrightnessDown exec xbacklight -10
 
+# Toggle workspace screen
+bindsym $mod+t exec "i3-msg 'move workspace to output up;move workspace to output right'"
+
 workspace_layout tabbed
 
 ## The notify bubble
