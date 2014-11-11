@@ -1,0 +1,58 @@
+#!/bin/sh
+
+set -e
+
+STATUS=""
+DID="-1"
+SLEEP="0"
+LAST_REMAINING_MINUTES="0"
+
+while sleep "$SLEEP" ; do
+	source /sys/class/power_supply/BAT1/uevent
+	SLEEP=120
+	
+	if [ "$POWER_SUPPLY_STATUS" = 'Discharging' ] ; then
+		REMAINING_MINUTES="$(( 60 * $POWER_SUPPLY_ENERGY_NOW / $POWER_SUPPLY_POWER_NOW ))"
+		
+		if [ "$REMAINING_MINUTES" -lt 15 ] ; then
+			if [ "$LAST_REMAINING_MINUTES" != "$REMAINING_MINUTES" ] ; then
+				DID="$(dunstify \
+					--printid \
+					--replace="$DID" \
+					--timeout=-1 \
+					--urgency=critical \
+					'Battery level is critical' \
+					"You are doomed in $REMAINING_MINUTES minutes." \
+				)"
+				
+				LAST_REMAINING_MINUTES="$REMAINING_MINUTES"
+			fi
+			
+			NEW_STATUS='warning'
+			SLEEP=15
+		elif [ "$REMAINING_MINUTES" -lt 30 ] ; then
+			NEW_STATUS='discharging'
+			SLEEP=60
+		fi
+	elif [ "$POWER_SUPPLY_STATUS" = 'Full' ] ; then
+		NEW_STATUS='full'
+	elif [ "$POWER_SUPPLY_STATUS" = 'Charging' ] ; then
+		NEW_STATUS='charging'
+	else
+		NEW_STATUS=''
+	fi
+	
+	if [ "$STATUS" != "$NEW_STATUS" ] ; then
+		if [ "$STATUS" = 'warning' ] ; then
+			dunstify --close="$DID"
+		fi
+		
+		if [ "$STATUS" = 'charging' -a "$NEW_STATUS" = 'full' ] ; then
+			dunstify \
+				--timeout=30 \
+				'Battery is fully charged'
+		fi
+		
+		STATUS="$NEW_STATUS"
+	fi
+done
