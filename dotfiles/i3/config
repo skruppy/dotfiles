@@ -151,7 +151,7 @@ bar {
 	status_command i3status
 }
 
-bindsym $mod+Ctrl+L exec i3lock
+bindsym $mod+Ctrl+L exec power lock
 bindsym $mod+Ctrl+P exec dpower
 bindsym $mod+Ctrl+S exec dsc
 
