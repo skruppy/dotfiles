@@ -63,11 +63,13 @@ autoMode() {
 			
 			case "$edid" in
 				## VGA monitor at home
+				## HDMI monitor at home
 				## VGA monitor of wu at gaf
 				## VGA monitor of emo at gaf
 				## VGA monitor of gauss at gaf
 				## VGA monitor of neumann at gaf
 				"f7b7199abf45a8a23817cbe6abfa912f"| \
+				"309b6264c166806eab7565a01ce5b5e3"| \
 				"dd6b0eb03e7e65cd66e9b83a1896d8b1"| \
 				"50888be149b9f1c6ff31251b8e0bc644"| \
 				"5235b56ec2110cc8dec9030068a2d67c"| \
@@ -134,6 +136,11 @@ case "$(md5sum /proc/sys/kernel/hostname | cut -c -32)" in
 	"5291325725dab2897d7a81dd3d75214d")
 		card="card0-HDMI-A-1"
 		primOutput="LVDS1"
+		secOutput="HDMI1"
+	;;
+	"9e4cce55ab33f66c3fed81d1343fe541")
+		card="card0-HDMI-A-1"
+		primOutput="eDP1"
 		secOutput="HDMI1"
 	;;
 	*)
