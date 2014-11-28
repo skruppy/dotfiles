@@ -2,9 +2,12 @@
 
 set -e
 
-## Install everything using
+## Install everything using one if the following methods
+## curl -s https://raw.githubusercontent.com/Skrupellos/dotfiles/master/share/bootstrap-via-ssh | sh
 ## wget -O - https://raw.githubusercontent.com/Skrupellos/dotfiles/master/share/bootstrap-via-ssh | sh
 
 git clone ssh://git@github.com/Skrupellos/dotfiles.git
+git submodule init
+git submodule update
 
 exec dotfiles/bin/dotinstall
