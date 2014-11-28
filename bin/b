@@ -3,7 +3,7 @@
 set -e
 
 if [ "$#" -eq "0" ] ; then
-	echo "$0 path [path ...]" >&2
+	echo "Usage: $(basename "$0") path [path ...]" >&2
 	echo "  create a backup of the specified files or directories, by appending .bak" >&2
 	exit 1
 fi
@@ -25,5 +25,5 @@ fi
 
 for B_PATH in "$@" ; do
 	B_PATH="$(echo "$B_PATH" | sed 's#/*$##')"
-	cp -R "$B_PATH" "$B_PATH.bak" || return $?
+	cp -R "$B_PATH" "$B_PATH.bak"
 done
