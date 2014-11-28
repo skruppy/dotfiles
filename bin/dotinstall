@@ -156,3 +156,9 @@ do
 		break
 	fi
 done
+
+
+## -- termcap ------------------------------------------------------------------
+if type tic >/dev/null 2>&1 ; then
+	tic "$DOT_DIR/share/rxvt-unicode-256color"
+fi
