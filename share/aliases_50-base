@@ -20,10 +20,14 @@ alias ....="cd ../../.."
 alias c="cd"
 alias s="ssh"
 alias m="mosh"
+alias n="nano"
+bn() { test "$#" -eq 1 && b "$1" && nano "$1" }
 
 ## Prevent overwriting
 alias mv="mv -i"
+alias mvf="\mv"
 alias cp="cp -i"
+alias cpf="\cp"
 
 ## Allow colors in less
 alias less="less -R"
@@ -37,3 +41,5 @@ if [  -n "$SSH_CONNECTION" ] ; then
 fi
 alias setprinted="setfattr -n user.printed -v 'printed' "
 alias clearprinted="setfattr -x user.printed "
+
+alias sshfs="sshfs -o reconnect,ConnectTimeout=10,ServerAliveInterval=30"
