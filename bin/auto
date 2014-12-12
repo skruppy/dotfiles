@@ -12,17 +12,24 @@ printUsage() {
 	if [ "$#" -ne 0 ] ; then
 		echo "$@" >&2
 	fi
-	echo "Usage: $(basename "$0") [OPTIONS] CMD..." >&2
+	echo "Usage: $(basename "$0") [OPTIONS] [--] CMD..." >&2
 	echo "" >&2
 	echo "  Executes CMD if some files change. \$n placeholders in CMD will be replaced" >&2
 	echo "  by the nth FILE." >&2
 	echo "" >&2
 	echo "OPTIONS" >&2
-	echo "  -f FILE  --file FILE  Files or directories to watch" >&2
-	echo "  -h       --help       Display this message" >&2
+	echo "  -f FILE  --file FILE   Files or directories to watch" >&2
+	echo "  -s       --stop        Stop if CMD fails" >&2
+	echo "  -c       --change      Execute CMD only on FILE changes, not with the the start of $(basename "$0")" >&2
+	echo "  -b       --bell        Ring the bell in the shell, after each iteration" >&2
+	echo "  -e       --error-bell  Ring the bell in the shell, when CMD failed" >&2
+	echo "  -h       --help        Display this message" >&2
 	echo "" >&2
 	echo "EXAMPLE" >&2
-	echo "  $(basename "$0") -f example.tex -f images/ pdflatex '\$1'" >&2
+	echo "  The following command executes \"pdflatex 'example.tex'\" imediatly after the start and" >&2
+	echo "  everytime the file example.tex or any file withing the images directory has changed." >&2
+	echo "  Afterwards it rings the bell." >&2
+	echo "    \$ $(basename "$0") -f example.tex -f images/ -b -- pdflatex '\$1'" >&2
 	
 	test "$#" -eq 0
 	exit "$?"
@@ -32,12 +39,17 @@ printUsage() {
 template() {
 	TEXT="$(echo "$1" | sed -e "s#'#'\"'\"'#g;s#\$\([[:digit:]]*\)#'\"\$\1\"'#g")"
 	shift
- 	echo "$(eval "echo '$TEXT'")"
+	echo "$(eval "echo '$TEXT'")"
 }
 
 
 ## ==== Arguments ==============================================================
 ## -- Options ------------------------------------------------------------------
+STOP=false
+CHANGE=false
+BELL=false
+ERROR_BELL=false
+
 while [ "$#" -gt 0 ] ; do
 	case "$1" in
 		"-f"|"--file")
@@ -45,11 +57,33 @@ while [ "$#" -gt 0 ] ; do
 			shift
 			shift
 		;;
+		"-s"|"--stop")
+			STOP=true
+			shift
+		;;
+		"-c"|"--change")
+			CHANGE=true
+			shift
+		;;
+		"-b"|"--bell")
+			BELL=true
+			shift
+		;;
+		"-e"|"--error-bell")
+			ERROR_BELL=true
+			shift
+		;;
 		"-h"|"--help")
 			printUsage
+			## EXIT
+		;;
+		"--")
+			shift
+			break
 		;;
 		"-"*)
 			printUsage "Unknown argument '$1'"
+			## EXIT
 		;;
 		*)
 			break
@@ -76,7 +110,11 @@ fi
 
 
 ## ==== Wait loop ==============================================================
-while inotifywait \
+echo "Using: ${CMD[@]}"
+
+
+
+while ! $CHANGE || inotifywait \
 	--recursive \
 	--event modify,delete_self,delete \
 	--quiet \
@@ -87,5 +125,26 @@ do
 	echo "### $(date)"
 	echo "########################################"
 	
-	"${CMD[@]}"
+	returncode=0
+	"${CMD[@]}" || returncode=$?
+	
+	if [ "$returncode" -eq 0 ] ; then
+		echo -e "\033[1;32;40m[DONE]\033[0m $(date)"
+		
+		if $BELL ; then
+			echo -e "\a"
+		fi
+	else
+		if $BELL || $ERROR_BELL ; then
+			echo -e "\a"
+		fi
+		
+		if $STOP ; then
+			exit "$returncode"
+		else
+			echo -e "\033[1;31;40mThe last command FAILED with the exit code ${returncode}\033[0m"
+		fi
+	fi
+	
+	CHANGE=true
 done
