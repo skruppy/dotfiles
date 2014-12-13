@@ -112,37 +112,40 @@ fi
 ## ==== Wait loop ==============================================================
 echo "Using: ${CMD[@]}"
 
-
+log() {
+	printf \
+		"\033[5;37;40m%-*s\033[0m\n" \
+		$(( $(tput cols) + ${2-0} )) \
+		">>> $(date '+%x %X') - $1"
+}
 
 while ! $CHANGE || inotifywait \
 	--recursive \
 	--event modify,delete_self,delete \
-	--quiet \
+	--quiet --quiet \
 	"${FILES[@]}"
 do
 	echo ""
-	echo "########################################"
-	echo "### $(date)"
-	echo "########################################"
+	log "starting"
 	
 	returncode=0
 	"${CMD[@]}" || returncode=$?
 	
 	if [ "$returncode" -eq 0 ] ; then
-		echo -e "\033[1;32;40m[DONE]\033[0m $(date)"
+		log $'\033[1;32m[DONE]\033[0;5;37;40m' 19
 		
 		if $BELL ; then
-			echo -e "\a"
+			echo -ne "\a"
 		fi
 	else
 		if $BELL || $ERROR_BELL ; then
-			echo -e "\a"
+			echo -ne "\a"
 		fi
 		
 		if $STOP ; then
 			exit "$returncode"
 		else
-			echo -e "\033[1;31;40mThe last command FAILED with the exit code ${returncode}\033[0m"
+			log $'\033[1;31m[FAILED]\033[0;5;37;40m with exit code '"${returncode}" 19
 		fi
 	fi
 	
