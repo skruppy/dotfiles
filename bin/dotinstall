@@ -100,6 +100,7 @@ rm "$HOME/.dot/tmp"
 
 for f in \
 	opera-browser \
+	firefox \
 	thunderbird \
 	pidgin \
 	urxvtc
