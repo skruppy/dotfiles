@@ -1,0 +1,51 @@
+#!/bin/bash
+## PulseAudio SINk Gyronator
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@" >&2
+	fi
+	echo "Usage: $(basename "$0") SINK ..." >&2
+	echo "" >&2
+	echo "  Rotates between PulseAudio SINKs." >&2
+	
+	test "$#" -eq 0
+	exit "$?"
+}
+
+
+if [ $# -eq 0 ] ; then
+	printUsage
+	## exit
+fi
+
+
+## Get the current default sink
+CUR_SINK="$(pacmd dump | grep -E '^set-default-sink' | cut -f 2 -d' ')"
+
+
+## Find the next default sink
+SINKS=( "$@" "$1" )
+
+i=0
+for SINK in "$@" ; do
+	let i++
+	
+	if [ "$SINK" == "$CUR_SINK" ] ; then
+		break
+	fi
+done
+
+SINK="${SINKS[$i]}"
+
+
+## Set the new default sink
+pacmd set-default-sink "$SINK"
+
+
+## Move currently running streams to new default sink
+pacmd list-sink-inputs | \
+grep index | \
+while read line ; do
+	pacmd move-sink-input "$(cut -f2 -d' '<<<"$line")" "$SINK"
+done
