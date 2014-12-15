@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=IRC (irssi)
-Comment=Starts a mosh session to your irssi server.
-Type=Application
-Exec=urxvtc -e mosh irc
