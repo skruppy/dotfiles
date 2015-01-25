@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e
+
+ACCOUNT="${1:-1}"
+PREFS="$(echo ~/.thunderbird/${2:-*.default}/prefs.js)"
+test -f "$PREFS"
+TMP="$(mktemp)"
+
+grep --max-count=1 -E "^user_pref\\(\"mail\\.account\\.account$ACCOUNT\\.identities\"" "$PREFS" | \
+cut -d '"' -f 4 | \
+tr "," "\n" | \
+while read ID ; do
+	ID_MAIL="$(grep -E "^user_pref\\(\"mail\\.identity\\.$ID\\.useremail\"" "$PREFS" | cut -d '"' -f 4)"
+	ID_NAME="$(grep -E "^user_pref\\(\"mail\\.identity\\.$ID\\.fullName\"" "$PREFS" | cut -d '"' -f 4)"
+	printf " %2s\t%-30s\t%s\n" "${ID:2}" "$ID_NAME" "$ID_MAIL" >>"$TMP"
+done
+
+${EDITOR:-vim} "$TMP"
+
+IDS="$(cut -f 1 "$TMP" | \
+sed -n 's/\s*\([0-9][0-9]*\)$/id\1,/p' | \
+tr -d '\n' | \
+sed 's/,$//')"
+
+rm "$TMP"
+
+grep -v -E "^user_pref\\(\"mail\\.account\\.account$ACCOUNT\\.identities\"" "$PREFS" >"$PREFS.new"
+echo "user_pref(\"mail.account.account$ACCOUNT.identities\", \"$IDS\");" >>"$PREFS.new"
+
+mv "$PREFS" "$PREFS.$(date "+%F_%T").bak"
+mv "$PREFS.new" "$PREFS"
