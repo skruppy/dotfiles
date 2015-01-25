@@ -35,5 +35,5 @@ else
 	
 	## Add those keys. The password is provided from STDIN via pam_exec's
 	## expose_authtok option
-	keychain --nogui --quiet --ignore-missing "${KEYS[@]}"
+	keychain --nogui --quiet --agents "gpg,ssh" --ignore-missing "${KEYS[@]}"
 fi
