@@ -1,0 +1,62 @@
+#!/usr/bin/python3
+
+import json
+import sys
+import subprocess
+import fileinput
+import os
+
+
+
+## Call a process (with arguments) an return it's cleand STDOUT output
+def sh(args, stdin = None):
+	return subprocess.check_output(args, stdin=stdin).decode("UTF-8")[:-1]
+
+
+
+## Get infos about all workspaces
+dsc = sh(['i3-msg', '-t', 'get_workspaces'])
+workspaces = json.loads(dsc)
+
+## Fin the current workspace
+name = None
+nr = None
+for workspace in workspaces:
+	if workspace["focused"]:
+		oldName = workspace["name"]
+		nr = workspace["num"]
+		break
+
+## Check for strange problems
+if oldName is None or nr is None or nr > 10:
+	sh(['i3-nagbar', '-t', 'warning', '-m', 'Did not found current workspace'])
+	sys.exit(0)
+
+## Get the new name
+x = sh(['dmenu', '-p', "New workspace name (default: \"%s\", \"#\" for unnamed)" % oldName], subprocess.DEVNULL)
+
+if x == "":
+	sys.exit(0)
+
+## Compose the final name
+if x == "#":
+	newName = "%i" % (nr)
+else:
+	newName = "%i: %s" % (nr, x.replace('"', '\\"'))
+
+## Reconfigure i3
+sh(['i3-msg', 'rename workspace "%s" to "%s"' % (oldName, newName)])
+
+## currently not implemented (also not needed)
+#sh(['i3-msg', 'bindsym $mod+%i workspace "%s"' % (nr, newName)])
+#sh(['i3-msg', 'bindsym $mod+Shift+%i move container to workspace "%s"' % (nr, newName)])
+
+## alternative (also not needed)
+#for line in fileinput.input(os.path.expanduser('~/.i3/config'), inplace=True):
+#	if line.startswith('bindsym $mod+%i ' % (nr)):
+#		print('bindsym $mod+%i workspace "%s"' % (nr, newName))
+#	
+#	if line.startswith('bindsym $mod+Shift+%i ' % (nr)):
+#		print('bindsym $mod+Shift+%i workspace "%s"' % (nr, newName))
+#
+#sh(['i3-msg', 'reload'])
