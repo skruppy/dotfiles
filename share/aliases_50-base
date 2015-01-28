@@ -11,7 +11,9 @@ alias lf="ls -hlv --group-directories-first"
 alias  l="lf --color=always"
 
 alias laf="lf -a"
-alias  la="laf --color=always"
+alias la="laf --color=always"
+
+alias emacs="emacs -nw"
 
 ## Shortcuts for most used commands
 alias ..="cd .."
@@ -21,6 +23,7 @@ alias c="cd"
 alias s="ssh"
 alias m="mosh"
 alias n="nano"
+alias e="emacs"
 bn() { test "$#" -eq 1 && b "$1" && nano "$1" ; }
 
 ## Prevent overwriting
