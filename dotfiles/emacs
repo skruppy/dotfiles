@@ -1,0 +1,2 @@
+(global-set-key (kbd "S-<f9>") 'backward-kill-word)
+(define-key input-decode-map "\e[27;6;15~" [C-S-backspace])
