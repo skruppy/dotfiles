@@ -1,0 +1,275 @@
+#!/bin/bash
+
+set -e
+
+
+
+VERSION="1"
+
+
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@" >&2
+	fi
+	
+	echo "Client usage: $(basename "$0") OPTIONS [FILE]" >&2
+	echo "Server usage: $(basename "$0") -r DIR URL" >&2
+	echo "" >&2
+	echo "  Publishes a file" >&2
+	echo "" >&2
+	echo "OPTIONS" >&2
+	echo "  -r, --receive          Switches to receive mode" >&2
+	echo "  -e, --extension EXT    Appends EXT to the random URL" >&2
+	echo "  -a, --auto             Appends extension of the file to the random URL" >&2
+	echo "  -p, --patch            Edit a copy of the content before uploading" >&2
+	echo "  -c, --check            Ask whether to upload the content" >&2
+	echo "  -n, --no-check         Don't ask whether to upload the content" >&2
+	echo "  -k, --keep             Don't copy the URL too X clipboard" >&2
+	echo "  -s, --ssh CMD_LINE     Uses CMD_LINE to reveive via stdin" >&2
+	echo "  -v, --version          Output version information and exit" >&2
+	echo "  -h, --help             Display this help and exit" >&2
+	
+	test "$#" -eq 0
+	echo "MEH"
+	exit "$?"
+}
+
+
+
+client() {
+	## ==== Arguments ==========================================================
+	## -- System defaults ------------------------------------------------------
+	CHECK=false
+	PATCH=false
+	KEEP=false
+	AUTO=false
+	EXTENSION=""
+	FILE=""
+	SSH="ssh pub"
+	
+	
+	## -- Load local defaults --------------------------------------------------
+	if [ -f "$HOME/.$(basename "$0")" ] ; then
+		source "$HOME/.$(basename "$0")"
+	fi
+	
+	
+	## -- From CMD line --------------------------------------------------------
+	while [ "$#" -gt "0" ] ; do
+		case "$1" in
+			"-e"|"--extension")
+				EXTENSION="$2"
+				shift
+			;;
+			"-a"|"--auto")
+				AUTO=true
+			;;
+			"-p"|"--patch")
+				PATCH=true
+			;;
+			"-c"|"--check")
+				CHECK=true
+			;;
+			"-n"|"--no-check")
+				CHECK=false
+			;;
+			"-k"|"--keep")
+				KEEP=true
+			;;
+			"-s"|"--ssh")
+				SSH="$2"
+				shift
+			;;
+			"-v"|"--version")
+				echo "Version: $VERSION"
+				exit 0
+			;;
+			"-h"|"--help")
+				printUsage
+				## EXIT
+			;;
+			"-r"|"--receive")
+				printUsage "Receive has to be the first argument"
+				## EXIT
+			;;
+			"--")
+				shift
+				break
+			;;
+			"-"*)
+				printUsage "Unknown argument '$1'"
+				## EXIT
+			;;
+			*)
+				break
+			;;
+		esac
+		
+		shift
+	done
+	
+	if [ "$1" != "-" ] ; then
+		FILE="$1"
+	fi
+	
+	
+	## -- Check options --------------------------------------------------------
+	## Number of arguments
+	if [ $# -gt 1 ] ; then
+		printUsage "You can specify only up to one file"
+		## EXIT
+	fi
+	
+	## Existance of file
+	if [ -n "$FILE" -a ! -f "$FILE" ] ; then
+		printUsage "\"$FILE\" is not a file"
+		## EXIT
+	fi
+	
+	## Auto option without files
+	if $AUTO && [ -z "$FILE" ] ; then
+		printUsage "Can't use auto feature without a file"
+		## EXIT
+	fi
+	
+	
+	## ==== Do it! =============================================================
+	if $AUTO ; then
+		EXTENSION=".${FILE#*.}"
+	fi
+	
+	## Create the file
+	FOO="$(mktemp)"
+	if [ -z "$FILE" ] ; then
+		xclip -o >"$FOO"
+	else
+		cat "$FILE" >"$FOO"
+	fi
+	
+	## Modify the file
+	if $PATCH ; then
+		${EDITOR:-vim} "$FOO"
+	fi
+	
+	## Verify the file
+	if $CHECK && ! $PATCH ; then
+		${PAGER:-more} "$FOO"
+		
+		while true ; do
+			echo -n "Do you want to publish? [Y/n] "
+			
+			read ANSWER
+			case "$ANSWER" in
+				n*|N*)
+					exit
+				;;
+				y*|Y*)
+					break
+				;;
+			esac
+		done
+	fi
+	
+	## Upload the file
+	URL="$( (
+		echo "$VERSION"
+		md5sum "$FOO" | cut -c -32
+		stat --format='%s' "$FOO"
+		echo "$EXTENSION"
+		cat "$FOO"
+	) | $SSH)"
+	
+	## Destroy file
+	rm "$FOO"
+	
+	## Return the URL (via stdout and poss. X clipboard)
+	echo "$URL"
+	if ! $KEEP ; then
+		xclip -in <<<"$URL"
+	fi
+}
+
+
+
+server() {
+	if [ $# -ne 2 ] ; then
+		printUsage "Broken server setup"
+		## EXIT
+	fi
+	
+	#### Read command line arguments
+	BASE="$1"
+	BASE_URL="$2"
+	
+	#### Read header
+	## Check Version
+	read CLIENT_VERSION
+	if [ "$CLIENT_VERSION" != "$VERSION" ] ; then
+		echo "Protocol error: Version missmatch. Client: $CLIENT_VERSION, Server: $VERSION" >&2
+		exit 1
+	fi
+	
+	## Check existing file
+	read CLIENT_HASH
+	read CLIENT_SIZE
+	read CLIENT_EXTENSION
+	
+	
+	if [ -n "$CLIENT_HASH" ] && ! grep --quiet -E '^[0-9a-f]{32}$' <<<"$CLIENT_HASH" ; then
+		echo "Protocol error: Not a valid hash \"$CLIENT_HASH\"" >&2
+		exit 1
+	fi
+	
+	HASH_FILE="$BASE/.$CLIENT_HASH"
+	
+	## We got old content (we also ignore any further input aka the actual content)
+	if [ -e "$HASH_FILE" ] ; then
+		SHORT_FILE="$(\
+			find "$BASE" \
+				-maxdepth 1 \
+				-inum "$(stat --format='%i' "$HASH_FILE")"  \
+				! -name ".*" \
+				-name "*$CLIENT_EXTENSION" \
+				-print \
+				-quit \
+		)"
+	
+	## We got new content
+	else
+		## stdin => hash file & hash received content
+		if type pv >/dev/null 2>&1 ; then
+			HASH="$(pv -s "$CLIENT_SIZE" | tee "$HASH_FILE" | md5sum | cut -c -32)"
+		else
+			HASH="$(tee "$HASH_FILE" | md5sum | cut -c -32)"
+		fi
+		
+		## check whether the client supplied hash was actually correct
+		if [ "$CLIENT_HASH" != "$HASH" ] ; then
+			rm "$HASH_FILE"
+			echo "Protocol error: Hash missmatch. Client: $CLIENT_HASH, Server: $HASH" >&2
+			exit 1
+		fi
+		
+		gzip -c "$HASH_FILE" >"$HASH_FILE.gz"
+	fi
+	
+	## Create short file based on the hash file
+	if [ -z "$SHORT_FILE" ] ; then
+		SHORT_FILE="$(mktemp --tmpdir="$BASE" --suffix="$CLIENT_EXTENSION" XXXX)"
+		ln -f "$HASH_FILE"    "$SHORT_FILE"
+		ln -f "$HASH_FILE.gz" "$SHORT_FILE.gz"
+	fi
+	
+	## Output the resulting URL, based on the short file name
+	echo -n "$BASE_URL$(basename "$SHORT_FILE")"
+}
+
+
+
+if [ "$1" == "-r" -o "$1" == "--receive" ] ; then
+	shift
+	server "$@"
+else
+	client "$@"
+fi
