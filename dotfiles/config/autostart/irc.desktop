@@ -2,4 +2,4 @@
 Name=IRC
 Comment=mosh session to your IRC server
 Type=Application
-Exec=urxvtc -name irc -e mosh irc
+Exec=urxvtc -title IRC -name irc -e ssh irc
