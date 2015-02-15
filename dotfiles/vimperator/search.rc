@@ -1,0 +1,105 @@
+
+"" Wikipedia - Englisch
+bmark -keyword=we https://en.wikipedia.org/wiki/Special:Search?search=%s
+
+"" Wikipedia - German
+bmark -keyword=w https://de.wikipedia.org/wiki/Spezial:Suche?search=%s
+
+"" Google Maps
+bmark -keyword=gm https://maps.google.com/maps?f=q&hl=de&geocode=&q=%s&btnG=Maps-Suche
+
+"" Woxikon, Synonyme
+bmark -keyword=sy http://synonyme.woxikon.de/synonyme/%s.php
+
+"" guenstiger.de - Der grosse Preisvergleich im Internet
+bmark -keyword=gu http://www.guenstiger.de/gt/main.asp?suche=%s&okid=0&submit.x=0&submit.y=0
+
+"" Google - English / German
+bmark -keyword=g https://www.google.com/search?q=%s&hl=en&lr=lang_en|lang_de&safe=off&complete=0
+
+"" Google images
+bmark -keyword=gi https://www.google.com/search?q=%s&tbm=isch&hl=en&safe=off
+
+"" DuckDuckGo
+bmark -keyword=d https://duckduckgo.com/?q=%s&ka=Ubuntu&kd=-1&kf=1&kj=b2&kk=s&kn=1&kp=-1&kq=n&ks=m&ky=b
+
+"" Wikipedia - German
+bmark -keyword=wg https://de.wikipedia.org/wiki/Spezial:Suche?search=%s
+
+"" YouTube
+bmark -keyword=y https://www.youtube.com/results?search_query=%s&aq=f
+
+"" PHP
+bmark -keyword=p http://php.net/manual-lookup.php?pattern=%s
+
+"" man pages
+bmark -keyword=m http://linuxmanpages.net/search.py?q=%s
+
+"" eBay
+bmark -keyword=e https://shop.ebay.de/i.html?_from=R40&_trksid=p5197.m570.l1313&_nkw=%s&_sacat=See-All-Categories
+
+"" Amazon
+bmark -keyword=a https://www.amazon.de/s/ref=nb_sb_noss?__mk_de_DE=%C5M%C5Z%D5%D1&url=search-alias%3Daps&field-keywords=%s&x=0&y=0
+
+"" dict.cc - Englisch
+bmark -keyword=t http://www.dict.cc/?s=%s
+
+"" dict.cc - Englisch
+bmark -keyword=te http://www.dict.cc/?s=%s
+
+"" dict.cc - Französisch
+bmark -keyword=tf http://defr.dict.cc/?s=%s
+
+"" dict.cc - Französisch
+bmark -keyword=tdf http://defr.dict.cc/?s=%s
+
+"" dict.cc - Englisch
+bmark -keyword=tde http://www.dict.cc/?s=%s
+
+"" leo.org - English
+bmark -keyword=tl http://dict.leo.org/ende?lp=ende&lang=de&searchLoc=0&cmpType=relaxed&sectHdr=on&spellToler=&search=%s
+
+"" leo.org - English
+bmark -keyword=tle http://dict.leo.org/ende?lp=ende&lang=de&searchLoc=0&cmpType=relaxed&sectHdr=on&spellToler=&search=%s
+
+"" leo.org - French
+bmark -keyword=tlf http://dict.leo.org/frde?lp=frde&lang=de&searchLoc=0&cmpType=relaxed&sectHdr=on&spellToler=&search=%s
+
+"" DuckDuckGo - German
+bmark -keyword=dg https://duckduckgo.com/?q=%s&ka=Ubuntu&kd=-1&kf=1&kj=b2&kk=s&kn=1&kp=-1&kq=n&ks=m&ky=b&kl=de-de
+
+"" Google - German
+bmark -keyword=gg https://www.google.de/search?q=%s&hl=de&safe=off
+
+"" Google - English
+bmark -keyword=ge https://www.google.com/search?q=%s&hl=en&safe=off
+
+"" DuckDuckGo - English
+bmark -keyword=de https://duckduckgo.com/?q=%s&ka=Ubuntu&kd=-1&kf=1&kj=b2&kk=s&kn=1&kp=-1&kq=n&ks=m&ky=b&kl=en-us
+
+"" DuckDuckGo - All
+bmark -keyword=ga https://duckduckgo.com/?q=%s&ka=Ubuntu&kd=-1&kf=1&kj=b2&kk=s&kn=1&kp=-1&kq=n&ks=m&ky=b
+
+"" Google images
+bmark -keyword=i https://www.google.com/search?q=%s&tbm=isch&hl=en&safe=off
+
+"" Ixquick images
+bmark -keyword=xi https://eu.ixquick.com/do/metasearch.pl?cat=pics&cmd=process_search&language=english&engine0=v1all%27&query=%s&x=0&y=0
+
+"" Ixquick - English
+bmark -keyword=xe https://eu.ixquick.com/do/metasearch.pl?cat=web&cmd=process_search&language=english&engine0=v1all%27&query=%s&x=0&y=0
+
+"" Ixquick - German
+bmark -keyword=xg https://eu.ixquick.com/do/metasearch.pl?cat=web&cmd=process_search&language=deutsch&engine0=v1all%27&query=%s&x=0&y=0
+
+"" Ixquick - English
+bmark -keyword=x https://eu.ixquick.com/do/metasearch.pl?cat=web&cmd=process_search&language=english&engine0=v1all%27&query=%s&x=0&y=0
+
+"" Wolfram|Alpha
+bmark -keyword=wa http://www.wolframalpha.com/input/?i=%s&dataset=
+
+"" Google
+bmark -keyword=g https://www.google.com/search?q=%s&hl=en&safe=off
+
+"" JavaScript & CSS
+bmark -keyword=j https://developer.mozilla.org/en-US/search?q=%s&topic=api&topic=css
