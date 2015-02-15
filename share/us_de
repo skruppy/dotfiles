@@ -1,0 +1,26 @@
+// US Layout with German characters
+// Bernd Schoeller <bernd.schoeller@inf.ethz.ch>
+// mods by Michael Weber
+// See http://www.charvolant.org/~doug/xkb/html/img3.png for a full layout
+
+partial default alphanumeric_keys
+xkb_symbols "basic" {
+    name[Group1]= "US/ASCII";
+    include "us"
+
+    key <TLDE> { [ NoSymbol, NoSymbol, dead_grave,      dead_tilde      ] };
+    key <AE06> { [ NoSymbol, NoSymbol, dead_circumflex, dead_circumflex ] };
+    key <AC11> { [ NoSymbol, NoSymbol, dead_acute,      dead_acute      ] };
+
+    key <AD07> { [ NoSymbol, NoSymbol, udiaeresis,      Udiaeresis      ] };
+    key <AD09> { [ NoSymbol, NoSymbol, odiaeresis,      Odiaeresis      ] };
+    key <AC01> { [ NoSymbol, NoSymbol, adiaeresis,      Adiaeresis      ] };
+    key <AC02> { [ NoSymbol, NoSymbol, ssharp,          ssharp          ] };
+    key <AD03> { [ NoSymbol, NoSymbol, EuroSign,        NoSymbol        ] };
+    key <AB07> { [ NoSymbol, NoSymbol, mu,              NoSymbol        ] };
+
+    key <RALT> { type[Group1]="TWO_LEVEL", [ ISO_Level3_Shift, ISO_Level3_Shift ]  };
+
+    modifier_map Mod5   { <RALT> };
+};
+
