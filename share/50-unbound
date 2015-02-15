@@ -1,0 +1,56 @@
+#!/bin/bash
+
+set -e
+
+## Install into /etc/NetworkManager/dispatcher.d/
+
+pidFile="/var/run/dnssec.pid"
+
+update() {
+	resolver=( $(nmcli -f IP4.DNS,IP6.DNS dev show | awk '{print $2;}' | sort -u) )
+	if [ ${#resolver[@]} -gt 0 ] ; then
+		unbound-control forward "${resolver[@]}"
+		c_resolv="nameserver 127.0.0.1"
+	else
+		c_resolv=""
+	fi
+	
+	search=( $(nmcli -f IP4.domain,IP6.domain dev show | awk '{print $2;}' | awk '!x[$0]++') )
+	if [ ${#search[@]} -gt 0 ] ; then
+		c_search="search ${search[*]}"
+	else
+		c_search=""
+	fi
+	
+echo 4 >>/tmp/foo
+	date >>/tmp/foo
+	chattr -i /etc/resolv.conf
+	cat >/etc/resolv.conf <<EOF
+# Generated and locked by $(basename "$0") on $(date)
+# To unlock this file:
+#  $ chattr -i /etc/resolv.conf
+$c_search
+$c_resolv
+EOF
+	chattr +i /etc/resolv.conf
+	date >>/tmp/foo
+}
+
+
+waitForUpdate() {
+	trap exit USR1
+	
+	if [ -e "$pidFile" ] && [ -e "/proc/$(cat "$pidFile")" ] ; then
+		kill -SIGUSR1 "$(cat "$pidFile")" || true
+	fi
+	
+	echo "$BASHPID" >/var/run/dnssec.pid
+	
+	for timeout in "$@" ; do
+		sleep "$timeout"
+		update
+	done
+		
+}
+
+waitForUpdate 1 4 35 &
