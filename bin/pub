@@ -1,8 +1,17 @@
 #!/bin/bash
 
 set -e
+set -o pipefail
 
 
+## Create a new user
+##  $ useradd --system --create-home pub
+## Grant the pub user write access to the pub files repo, which will be served
+## by the webserver.
+##  $ chown -R http.pub /srv/http/files/
+## Add the ssh keys of users who shoud be able to use this service, prefixed
+## by the following:
+##  command="/path/to/pub -r /srv/http/files/ https://example.com/" ....
 
 VERSION="1"
 
@@ -31,7 +40,6 @@ printUsage() {
 	echo "  -h, --help             Display this help and exit" >&2
 	
 	test "$#" -eq 0
-	echo "MEH"
 	exit "$?"
 }
 
@@ -186,7 +194,7 @@ client() {
 	## Return the URL (via stdout and poss. X clipboard)
 	echo "$URL"
 	if ! $KEEP ; then
-		xclip -in <<<"$URL"
+		echo -n "$URL" | xclip -in
 	fi
 }
 
