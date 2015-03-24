@@ -99,11 +99,10 @@ rm "$HOME/.dot/tmp"
 
 
 for f in \
-	opera-browser \
 	firefox \
 	thunderbird \
 	pidgin \
-	urxvtc
+	keepass-keepass
 do
 	SRC="/usr/share/applications/$f.desktop"
 	DST=".config/autostart/$f.desktop"

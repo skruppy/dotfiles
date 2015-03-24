@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=IRC
-Comment=mosh session to your IRC server
-Type=Application
-Exec=urxvtc
