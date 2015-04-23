@@ -47,6 +47,10 @@ esac
 
 ## ==== Once on all interactive shells (variables, umask) ======================
 if [ -z "$DOT_DIR" ] ; then
+	if [ -e /etc/profile ] ; then
+		. /etc/profile
+	fi
+	
 	if [ -f "$HOME/.dot/dir" ] ; then
 		export DOT_DIR="$(cat "$HOME/.dot/dir")"
 		if type ruby >/dev/null 2>&1 ; then
