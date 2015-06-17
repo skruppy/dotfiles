@@ -1,0 +1,4 @@
+[Default Applications]
+x-scheme-handler/http=palemoon.desktop
+x-scheme-handler/https=palemoon.desktop
+x-scheme-handler/mailto=thunderbird.desktop
