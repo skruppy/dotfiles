@@ -14,8 +14,8 @@ for path in "$@" ; do
 	strippedFile="$(sed -e 's#^[0-9][0-9]-##' <<<"$file")"
 	
 	## Prerequest 1: The file has to exist
-	if [ -e "$path" ] ; then
-		echo "'$strippedFile' is listed multiple times" >&2
+	if [ ! -e "$path" ] ; then
+		echo "'$strippedFile' does not exist" >&2
 		exit 1
 	fi
 	
