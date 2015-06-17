@@ -1,0 +1,93 @@
+#!/bin/sh
+
+
+set -e
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@" >&2
+	fi
+	
+	echo "Usage: $(basename "$0") [OPTIONS] [--] FILES ..." >&2
+	echo "" >&2
+	echo "  Places 8 pages on a single one in PDF files. Beforehead it joins all FILES" >&2
+	echo "  and crops all pages." >&2
+	echo "" >&2
+	echo "OPTIONS" >&2
+	echo "  -o FILE     --out FILE       Save the result to FILE. (mutal exclusive" >&2
+	echo "                               with -p). This is the default behaviour." >&2
+	echo "  -p PRINTER  --print PRINTER  Prints the result directly on PRINTER (mutal" >&2
+	echo "                               exclusive with -o)" >&2
+	echo "  -n          --no-crop        Don't crop white space of pages (faster)" >&2
+	echo "  -h          --help           Display this message" >&2
+	
+	test "$#" -eq 0
+	exit "$?"
+}
+
+crop=true
+printer=''
+out=''
+
+
+
+while [ "$#" -gt "0" ] ; do
+	case "$1" in
+		"-p"|"--print"|"--printer")
+			printer="$2"
+			shift
+		;;
+		"-n"|"--nocrop"|"--no-crop")
+			crop=false
+		;;
+		"-o"|"--out"|"--output")
+			out="$2"
+			shift
+		;;
+		"-h"|"--help")
+			printUsage
+			## EXIT
+		;;
+		"--")
+			shift
+			break
+		;;
+		"-"*)
+			printUsage "Unknown argument '$1'"
+			## EXIT
+		;;
+		*)
+			break
+		;;
+	esac
+	
+	shift
+done
+
+if [ -z "$out" ] ; then
+	out="${1:0:-4}-8up.pdf"
+fi
+
+DIR=`mktemp -d`
+
+## Join
+pdfjoin -o "$DIR/joined.pdf" "$@"
+
+## Crop if whished
+if $crop ; then
+	pdfcrop "$DIR/joined.pdf" "$DIR/cropped.pdf"
+else
+	ln "$DIR/joined.pdf" "$DIR/cropped.pdf"
+fi
+
+## The actual 8up
+pdfjam --nup 2x4 --offset '1cm 0.5cm'  --frame true "$DIR/cropped.pdf" -o "$DIR/8up.pdf"
+
+## Put the file to it's final destination
+if [ -z "$printer" ] ; then
+	mv "$DIR/8up.pdf" "$out"
+else
+	lp -P "$printer" "$DIR/8up.pdf"
+fi
+
+rm -R "$DIR"
