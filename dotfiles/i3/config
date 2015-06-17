@@ -151,10 +151,11 @@ bar {
 	status_command i3status
 }
 
-bindsym $mod+Ctrl+L exec power lock
-bindsym $mod+Ctrl+P exec dpower
-bindsym $mod+Ctrl+S exec dsc
+bindsym $mod+Ctrl+l exec power lock
+bindsym $mod+Ctrl+p exec dpower
+bindsym $mod+Ctrl+s exec dsc
 bindsym $mod+n exec i3-rename
+bindsym $mod+Ctrl+c exec i3scratch
 
 bindsym $mod+Ctrl+T exec pasing "alsa_output.usb-0d8c_C-Media_USB_Headphone_Set-00-Set.analog-stereo" "alsa_output.pci-0000_00_1b.0.analog-stereo"
 bindsym XF86AudioMute exec pamixer --toggle-mute
@@ -173,22 +174,41 @@ workspace_layout tabbed
 for_window [class="^URxvt$" instance="^irc$"] move workspace "1: com"
 for_window [class="^Thunderbird$" instance="^Mail$"] move workspace "1: com"
 for_window [class="^Pidgin$" instance="^Pidgin$"] move workspace "1: com"
-for_window [class="^Firefox$" instance="^Navigator$"] move workspace "2: www"
+for_window [class="^Firefox$"] move workspace "2: www"
+for_window [class="^Pale moon$"] move workspace "2: www"
 for_window [class="^Opera$" instance="^opera$"] move workspace "2: www"
+for_window [class="^KeePass2$" instance="^keepass2$"] move workspace "2: www"
 #assign [class="^URxvt$" instance="^irc$"] "1: com" 
 #assign [class="^Thunderbird$" instance="^Mail$"] "1: com"
 #assign [class="^Pidgin$" instance="^Pidgin$"] "1: com"
 #assign [class="^Firefox$" instance="^Navigator$"] "2: www"
 #assign [class="^Opera$" instance="^opera$"] "2: www"
 
+#### Use xprop to find the IDs and write PCREs
+#### xprop WM_CLASS | awk -F\" '{print "   Class: "$4"\nInstance: "$2}'
 ## The notify bubble
-for_window [class="Xfce4-notifyd"] floating enable ; border none
+for_window [class="^Xfce4-notifyd$"] floating enable ; border none
 
 ## The unlock password promt of gnome-keyring-daemon
-for_window [class="Gcr-prompter"] floating enable
+for_window [class="^Gcr-prompter$"] floating enable
+
+## Wireshark
+for_window [class="^Wireshark$" title="^Follow TCP Stream"] floating disable
+for_window [class="^Wireshark$" title="^Wireshark: "] floating disable
+
+## Thunderbird
+for_window [class="^Thunderbird$" title="^Identit"] floating disable
+for_window [class="^Thunderbird$" title="^Account Settings$"] floating disable
+
+## KeePass 2
+for_window [class="^KeePass2$"] floating disable
 
 ## Gnome's Kupfer application launcher
-for_window [class="Kupfer.py"] border none
+for_window [class="^Kupfer\.py$"] border none
+
+## Scratchpad applications
+for_window [instance="scratchpad"] floating enable, move scratchpad, scratchpad show;
+
 
 # class                 border  backgr. text    indicator
 client.focused          #999999 #ccccff #000000 #2e9ef4
@@ -198,3 +218,5 @@ client.urgent           #cc3333 #ff6666 #000000 #900000
 
 exec i3-msg 'workspace 3'
 exec --no-startup-id ~/.xinitrc2
+
+
