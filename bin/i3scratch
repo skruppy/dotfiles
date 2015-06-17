@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+
+if ! xdotool search --classname scratchpad >/dev/null ; then
+	urxvtc -name scratchpad -cd /tmp -geometry 100x10 -title 'Scratchpad (Press Mod + Ctrl + C to hide)' -e ipython --TerminalInteractiveShell.banner1=
+else
+	i3-msg --quiet '[instance="scratchpad"] scratchpad show'
+fi
+
