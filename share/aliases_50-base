@@ -17,6 +17,7 @@ alias anki="anki -b $HOME/local/anki"
 alias sshfs="sshfs -o reconnect,ConnectTimeout=10,ServerAliveInterval=30"
 alias urxvtc="urxvtc -cd \$(pwd)"
 alias sml="rlwrap -p'green' sml"
+alias emerge="emerge -a"
 test -n "$SSH_CONNECTION" && alias sudo="sudo SSH_CONNECTION='$SSH_CONNECTION'"
 
 
@@ -46,3 +47,5 @@ alias notmine="find \! -user $(whoami) -exec ls -l --color=auto --directory {} +
 alias music="youtube-viewer --novideo"
 alias setprinted="setfattr --name=user.printed --value=printed"
 alias clearprinted="setfattr --remove=user.printed"
+alias serverhere="python2 -m SimpleHTTPServer"
+alias replace="python  -c 'import sys;print(sys.stdin.read().replace(sys.argv[1], sys.argv[2]))'"
