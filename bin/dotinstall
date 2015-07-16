@@ -99,7 +99,6 @@ rm "$HOME/.dot/tmp"
 
 
 for f in \
-	firefox \
 	thunderbird \
 	pidgin \
 	keepass-keepass

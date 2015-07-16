@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -e
+
+exec dex /usr/share/applications/`xdg-mime query default x-scheme-handler/http`
