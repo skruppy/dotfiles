@@ -6,12 +6,12 @@
 set -e
 
 selurl() {
-  setopt localoptions extendedglob
-  sel="$(xclip -out)"
-  LC_ALL=C input=( ${(s::)sel} )   # work on bytes
-  print ${(j::)input/(#b)([^A-Za-z0-9_.!~*\'\(\)-])/%$(([##16]#match))}
+	setopt localoptions extendedglob
+	sel="$(xclip -out)"
+	LC_ALL=C input=( ${(s::)sel} )   # work on bytes
+	print ${(j::)input/(#b)([^A-Za-z0-9_.!~*\'\(\)-])/%$(([##16]#match))}
 }
 
-${BROWSER:-firefox} \
+exec xdg-open \
 	"http://www.google.com/search?q=$(selurl)&hl=en&lr=lang_en|lang_de&safe=off" \
 	>/dev/null 2>&1 &
