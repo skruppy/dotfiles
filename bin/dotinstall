@@ -136,7 +136,8 @@ if type git >/dev/null 2>&1 ; then
 fi
 
 ## -- i3 -----------------------------------------------------------------------
-if type i3-msg >/dev/null 2>&1 ; then
+## Test wheather i3 is running and installed by tying to send an empyt command.
+if i3-msg ; then
 	i3-msg --quiet reload
 fi
 
