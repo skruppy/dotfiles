@@ -80,12 +80,6 @@ fi
 
 
 ## ==== Every time on all interactive shells (aliases, functions) ==============
-case "$S_DOMAIN" in
-	"cip.ifi.lmu.de")
-		unalias rm
-		;;
-esac
-
 for f in \
 	"$DOT_DIR/share/aliases_"* \
 	"$DOT_DIR/share/promt-sh_"*
