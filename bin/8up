@@ -81,7 +81,7 @@ else
 fi
 
 ## The actual 8up
-pdfjam --nup 2x4 --offset '1cm 0.5cm'  --frame true "$DIR/cropped.pdf" -o "$DIR/8up.pdf"
+pdfjam --a4paper --scale 0.95 --nup 2x4 --offset '0.5cm 0.0cm'  --frame true "$DIR/cropped.pdf" -o "$DIR/8up.pdf"
 
 ## Put the file to it's final destination
 if [ -z "$printer" ] ; then
