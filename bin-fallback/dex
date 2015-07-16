@@ -1,0 +1,21 @@
+#!/bin/bash
+
+shopt -s nullglob
+
+e() {
+	EXEC="$(grep '^Exec' $1 | tail -1 | sed 's/^Exec=//' | sed 's/%.//')"
+	if [ -x "$EXEC" ] ; then
+		"$EXEC" &
+	fi
+}
+
+if [ "$1" == "-a" ] ; then
+	shift
+	for f in ~/.config/autostart/* ; do
+		e "$f"
+	done
+done
+
+for f in "$@" ; do
+	e "$f"
+done
