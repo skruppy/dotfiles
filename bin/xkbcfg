@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -e
+
+## Configuring the keyboard has to be done in this order. Therefore we need
+## this script to enable dex to execute the comands in order.
+xkbcomp -I~/.xkb ~/.xkb/default.xkb $DISPLAY
+xmodmap ~/.Xmodmap

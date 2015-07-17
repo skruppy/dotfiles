@@ -18,6 +18,7 @@ xkb_symbols "basic" {
     key <AC02> { [ NoSymbol, NoSymbol, ssharp,          ssharp          ] };
     key <AD03> { [ NoSymbol, NoSymbol, EuroSign,        NoSymbol        ] };
     key <AB07> { [ NoSymbol, NoSymbol, mu,              NoSymbol        ] };
+    key <BKSL> { [ NoSymbol, NoSymbol, degree,          NoSymbol        ] };
 
     key <RALT> { type[Group1]="TWO_LEVEL", [ ISO_Level3_Shift, ISO_Level3_Shift ]  };
 
