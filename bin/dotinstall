@@ -137,7 +137,7 @@ fi
 
 ## -- i3 -----------------------------------------------------------------------
 ## Test wheather i3 is running and installed by tying to send an empyt command.
-if i3-msg ; then
+if i3-msg >/dev/null 2>&1 ; then
 	i3-msg --quiet reload
 fi
 

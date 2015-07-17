@@ -211,7 +211,7 @@ then
 	if \
 		type keychain >/dev/null 2>&1 && \
 		eval "$(\
-			keychain --query --agents ssh,gpg --quiet | \grep . | sed 's/^/export /' || \
+			keychain --query --agents ssh,gpg --quiet 2>/dev/null | \grep . | sed 's/^/export /' || \
 			echo "return 1" \
 		)"
 	then
