@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -e
+
+printUsage() {
+	echo "Usage: $(basename "$0") OPTIONS https://github.com/..." >&2
+	echo "" >&2
+	echo "  download a directory (part of a git repository) from github." >&2
+	echo "" >&2
+	echo "OPTIONS" >&2
+	echo "  -h       --help            Display this message" >&2
+	exit ${1:-1}
+}
+
+case "$1" in
+	"-h"|"--help")
+		printUsage 0
+	;;
+	"https://github.com/"*)
+		svn co "${1//\/tree\/master\//\/trunk\/}"
+	;;
+	"")
+		printUsage
+	;;
+	*)
+		echo "ERROR: Not a github URL." >&2
+		printUsage
+	;;
+esac
