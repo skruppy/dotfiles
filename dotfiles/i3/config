@@ -169,6 +169,10 @@ bindsym XF86MonBrightnessDown exec xbacklight -10
 # Toggle workspace screen
 bindsym $mod+t exec "i3-msg 'move workspace to output up;move workspace to output right'"
 
+# Screenshot
+bindsym Print      exec screenshot
+bindsym Print+Ctrl exec screenshot -p
+
 # Default workspace settings
 workspace_layout tabbed
 for_window [class="^URxvt$" instance="^irc$"] move workspace "1: com"
