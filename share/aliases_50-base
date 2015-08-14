@@ -3,6 +3,7 @@ alias grep="grep     --color=always"
 alias fgrep="fgrep   --color=always"
 alias egrep="egrep   --color=always"
 alias ls="ls         --color=always"
+alias dmesg="dmesg   --color=always --human"
 alias youtube-viewer="youtube-viewer --use-colors --colorful"
 
 
