@@ -8,8 +8,8 @@ printUsage() {
 	echo "  Takes a screenshot after DELAY secons (default is 0 seconds)" >&2
 	echo "" >&2
 	echo "OPTIONS" >&2
-	echo "  -p  --no-edit   Don't start gimp to edit the screenshot" >&2
-	echo "  -n  --publish   Publish the screenshot using pub" >&2
+	echo "  -n  --no-edit   Don't start gimp to edit the screenshot" >&2
+	echo "  -p  --publish   Publish the screenshot using pub" >&2
 	echo "  -h  --help      Display this message" >&2
 	exit ${1:-1}
 }
@@ -35,17 +35,18 @@ while [ "$#" -gt "0" ] ; do
 		;;
 		*)
 			SLEEP="$1"
+			shift
 			break
 		;;
 	esac
 done
 
 
-if [ "$#" -gt "0" ] ; do
+if [ "$#" -gt "0" ] ; then
 	echo "Unknown arguments $@" >&2
 	printUsage
 	# exit
-done
+fi
 
 sleep "$SLEEP"
 
