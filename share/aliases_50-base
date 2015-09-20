@@ -19,6 +19,7 @@ alias sshfs="sshfs -o reconnect,ConnectTimeout=10,ServerAliveInterval=30"
 alias urxvtc="urxvtc -cd \$(pwd)"
 alias sml="rlwrap -p'green' sml"
 alias emerge="emerge -a"
+alias man="LESS_TERMCAP_md=$'\E[38;5;82m\E[1m' LESS_TERMCAP_md=$'\E[38;5;220m\E[1m' GROFF_NO_SGR=1 man"
 test -n "$SSH_CONNECTION" && alias sudo="sudo SSH_CONNECTION='$SSH_CONNECTION'"
 
 
