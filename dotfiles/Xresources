@@ -8,8 +8,11 @@ URxvt*font:                  xft:Droid Sans Mono Slashed-7.5
 
 
 !! Scrollbar
-!! can be: rxvt (default), plain (most compact), next, or xterm
+!! Style: rxvt (default), plain (most compact), next, or xterm
+!! Buffer size: max. 65535
 URxvt*scrollstyle:           plain
+URxvt*saveLines:             10000
+URxvt*scrollBar_right:       true
 
 
 !! Icon
