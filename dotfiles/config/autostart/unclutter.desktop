@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=unclutter
+Comment=Hides incative mouse pointer
+Type=Application
+Exec=unclutter -noevents
