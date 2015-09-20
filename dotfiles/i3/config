@@ -213,6 +213,10 @@ for_window [class="^Kupfer\.py$"] border none
 ## Scratchpad applications
 for_window [instance="scratchpad"] floating enable, move scratchpad, scratchpad show;
 
+## PDFpc (slide presenter)
+for_window [class="^Pdfpc$" window_role="^presentation$"] move output HDMI1;
+for_window [class="^Pdfpc$" window_role="^presenter$"] move output eDP1;
+
 
 # class                 border  backgr. text    indicator
 client.focused          #999999 #ccccff #000000 #2e9ef4
