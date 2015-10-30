@@ -1,3 +1,23 @@
+if empty(glob('~/.vim/autoload/plug.vim'))
+	silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+	autocmd VimEnter * PlugInstall | source $MYVIMRC
+endif
+
+
+call plug#begin('~/.vim/plugged')
+
+Plug 'kien/ctrlp.vim'
+Plug 'tomasr/molokai'
+Plug 'kien/tabman.vim'
+Plug 'tpope/vim-fugitive'
+Plug 'airblade/vim-gitgutter'
+Plug 'majutsushi/tagbar'
+Plug 'scrooloose/nerdtree'
+
+Plug 'bling/vim-airline' | Plug 'ryanoasis/vim-devicons'
+
+call plug#end()
+
 set tabstop=4
 set shiftwidth=4
 set autoindent
@@ -8,22 +28,76 @@ set scrolloff=6
 
 set hlsearch
 
-" highlight tabs
+
+"" highlight tabs
+set list
 set listchars=tab:→\ 
-highlight SpecialKey guifg=#4a4a59 ctermfg=8
-:set list
 nmap <leader>l :exec &listchars == "tab:  " ? "set listchars=tab:→\\ " : "set listchars=tab:\\ \\ "<CR>
 
-" Syntax highlithing
+
+"" Syntax highlithing
 syntax on
 filetype plugin on
 
-" 80 colums margin
+
+"" Color scheme
+let g:rehash256 = 1
+colorscheme molokai
+
+
+"" 80 colums margin
 vertical resize 81
 set colorcolumn=81
 
 
-" For vimdiff
+"" For vimdiff
 if &diff
 	colorscheme elflord
 endif
+
+
+"" NERDTree
+map <F5> :NERDTreeToggle<CR>
+autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType == "primary") | q | endif
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+
+
+"" Highlight lines
+set cursorline
+set cursorcolumn
+
+
+"" vim-airline
+set laststatus=2
+let g:airline_theme='light'
+let g:airline_powerline_fonts = 1
+
+
+"" Tagbar
+nmap <F7> :TagbarToggle<CR>
+
+
+"" Tabman
+let g:tabman_toggle = '<F6>'
+
+
+"" Nicer window movement key bindings
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+
+set fillchars+=vert:\ 
+hi vertsplit ctermbg=fg
+
+" Don't close buffer when opening new one "over" another one
+set hidden
+
+" https://robots.thoughtbot.com/vim-splits-move-faster-and-more-naturally
+set splitbelow
+set splitright
+
+
+

@@ -4,7 +4,7 @@ URxvt*background:            Black
 
 
 !! Font
-URxvt*font:                  xft:Droid Sans Mono Slashed-7.5
+URxvt*font:                  xft:Droid Sans Mono Slashed Extra-7.5
 
 
 !! Scrollbar
