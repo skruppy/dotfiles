@@ -49,6 +49,10 @@ URxvt.iso14755:              false
 URxvt.iso14755_52:           false
 
 
+!! Disable printing
+URxvt.print-pipe:            cat >/dev/null
+
+
 !! Emacs
 URxvt.keysym.C-BackSpace:    \033[33~
 URxvt.keysym.C-S-BackSpace:  \033[27;6;15~
