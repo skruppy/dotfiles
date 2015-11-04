@@ -101,6 +101,10 @@ set splitbelow
 set splitright
 
 
+"" Make file "unix like"
+map <F9> :set fileencoding=utf-8<CR>:set ff=unix<CR>
+
+
 "" Wrap cursor on line endings
 set whichwrap+=<,>,h,l,[,]
 
