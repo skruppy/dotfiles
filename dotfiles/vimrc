@@ -103,3 +103,13 @@ set splitright
 
 
 
+
+"" Save with ctrl + s
+"" https://bbs.archlinux.org/viewtopic.php?id=140902
+"" http://vim.wikia.com/wiki/Map_Ctrl-S_to_save_current_or_new_files
+noremap <C-S> :update<CR>
+vnoremap <C-S> <C-C>:update<CR>
+inoremap <C-S> <C-O>:update<CR>
+
+
+

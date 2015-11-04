@@ -87,6 +87,9 @@ do
 	. "$f"
 done
 
+## Allow Ctrl + S for vim
+stty -ixon
+
 case "$S_ACT_SHELL" in
 	"bash")
 		# check the window size after each command and, if necessary,
