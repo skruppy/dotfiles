@@ -18,9 +18,7 @@ Plug 'bling/vim-airline' | Plug 'ryanoasis/vim-devicons'
 
 call plug#end()
 
-set tabstop=4
-set shiftwidth=4
-set autoindent
+
 
 set number
 
@@ -38,6 +36,7 @@ nmap <leader>l :exec &listchars == "tab:  " ? "set listchars=tab:→\\ " : "set 
 "" Syntax highlithing
 syntax on
 filetype plugin on
+filetype plugin indent off
 
 
 "" Color scheme
@@ -102,6 +101,17 @@ set splitbelow
 set splitright
 
 
+"" Indenting
+"" http://stackoverflow.com/a/7413117
+set tabstop=4
+set shiftwidth=4
+
+set copyindent
+set preserveindent
+
+inoremap <CR> <CR>x<BS>
+nnoremap o ox<BS>
+nnoremap O Ox<BS>
 
 
 "" Save with ctrl + s
