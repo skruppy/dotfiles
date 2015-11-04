@@ -101,6 +101,10 @@ set splitbelow
 set splitright
 
 
+"" Wrap cursor on line endings
+set whichwrap+=<,>,h,l,[,]
+
+
 "" Indenting
 "" http://stackoverflow.com/a/7413117
 set tabstop=4
