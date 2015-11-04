@@ -65,7 +65,7 @@ autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
 
 "" Highlight lines
 set cursorline
-set cursorcolumn
+map <F10> :set cursorcolumn!<Bar>set cursorline!<CR>
 
 
 "" vim-airline
@@ -92,10 +92,12 @@ nnoremap <C-l> <C-w>l
 set fillchars+=vert:\ 
 hi vertsplit ctermbg=fg
 
-" Don't close buffer when opening new one "over" another one
+
+"" Don't close buffer when opening new one "over" another one
 set hidden
 
-" https://robots.thoughtbot.com/vim-splits-move-faster-and-more-naturally
+
+"" https://robots.thoughtbot.com/vim-splits-move-faster-and-more-naturally
 set splitbelow
 set splitright
 
