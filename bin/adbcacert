@@ -1,0 +1,26 @@
+#!/bin/sh
+
+set -e
+
+getCert() {
+	crt="$1.pem"
+	url="$2"
+	
+	if [ ! -e $crt ] ; then
+		wget -O $crt "$url"
+	fi
+	
+	f=$(openssl x509 -inform PEM -subject_hash_old -in $crt | head -1).0
+	openssl x509 -inform PEM -text -in $crt -out /dev/null | cat $crt - >$f
+	
+	adb push "$f" "/sdcard/$f"
+	adb shell "su -c 'install -o root -g root -m 0644 /sdcard/$f /system/etc/security/cacerts/$f'"
+	adb shell "rm /sdcard/$f"
+}
+
+adb shell "su -c 'mount -o remount,rw /system'"
+
+getCert class1 "https://www.cacert.org/certs/root.crt"
+getCert class3 "https://www.cacert.org/certs/class3.crt"
+
+adb shell "su -c 'mount -o remount,ro /system'"
