@@ -1,0 +1,278 @@
+#!/bin/bash
+
+
+set -e
+
+VERBOSE=false
+GET="file"
+CERT_PATH="-"
+USAGE="3"
+SELECTOR="1"
+TYPE="1"
+OUT="rdata"
+TRANS_PROT="tcp"
+PORT="443"
+DOMAIN=""
+TTL="3600"
+STARTTLS=""
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@" >&2
+	fi
+	
+	echo "Usage: $(basename "$0") [OPTIONS] [USAGE] [SELECTOR] [TYPE]" >&2
+	echo "" >&2
+	echo "  Places 8 pages on a single one in PDF files. Beforehead it joins all FILES" >&2
+	echo "  and crops all pages." >&2
+	echo "" >&2
+	echo "OPTIONS" >&2
+	echo "  -f --file FILE             Save the result to FILE. (mutal exclusive" >&2
+	echo "                             with -p). This is the default behaviour." >&2
+	echo "  -s --server DOMAIN[:PORT]  Prints the result directly on PRINTER (mutal" >&2
+	echo "                             exclusive with -o)" >&2
+	echo "  -d --domain DOMAIN         Don't crop white space of pages (faster)" >&2
+	echo "  -p --port PORT             Port used to connect to and state in the TLSA record" >&2
+	echo "  -3 --transport PROT        Display this message" >&2
+	echo "  -o --out FORMAT            Display this message" >&2
+	echo "  -a --starttls PROT         Display this message" >&2
+	echo "  -v --verbose               Be more verbose" >&2
+	echo "  -h --help                  Display this message" >&2
+	echo "" >&2
+	echo "FORMAT" >&2
+	echo "  * rdata:                                                   \"3 1 1 a9bf49fe28b0e..\"" >&2
+	echo "  + record:                    \"_443._tcp.example.com IN TLSA 3 1 1 a9bf49fe28b0e..\"" >&2
+	echo "  + wildcard-record:              \"*._tcp.example.com IN TLSA 3 1 1 a9bf49fe28b0e..\"" >&2
+	echo "  + update:       \"update add _443._tcp.example.com 3600 TLSA 3 1 1 a9bf49fe28b0e..\"" >&2
+	echo "  + wildcard-update: \"update add *._tcp.example.com 3600 TLSA 3 1 1 a9bf49fe28b0e..\"" >&2
+	echo "  + data:                                                          \"a9bf49fe28b0e..\"" >&2
+	echo "" >&2
+	echo "USAGE" >&2
+	echo "  Defines what the client should check (case insensitive)" >&2
+	echo "  + 0 / PKIX-TA: Server cert must be signed by a CA known to the client and" >&2
+	echo "                 the given cert must be somewhere in the cain." >&2
+	echo "  + 1 / PKIX-EE: Server cert must be signed by a CA known to the client and" >&2
+	echo "                 the given cert must be the server cert." >&2
+	echo "  + 2 / DANE-TA: The given cert must be somewhere in the cain." >&2
+	echo "  * 3 / DANE-EE: The given cert must be the server cert." >&2
+	echo "" >&2
+	echo "SELECTOR" >&2
+	echo "  Defines which parts of the cert the client has to check" >&2
+	echo "  + 0 / full: Every aspect of the cert." >&2
+	echo "  * 1 / spki: Just the public key." >&2
+	echo "" >&2
+	echo "TYPE" >&2
+	echo "  " >&2
+	echo "  + 0 / exact: The full data." >&2
+	echo "  * 1 / sha256: SHA-256 of the data." >&2
+	echo "  + 2 / sha512: SHA-512 of the data." >&2
+	
+	test "$#" -eq 0
+	exit "$?"
+}
+
+
+log() {
+	if $VERBOSE ; then
+		echo "--> $@" >&2
+	fi
+}
+
+logStdin() {
+	if $VERBOSE ; then
+		tee /dev/fd/2
+	else
+		cat
+	fi
+}
+
+
+getCert() {
+	if [ "$GET" == "server" ] ; then
+		log "Get cert: Connecting to $DOMAIN on port $PORT$STARTTLS"
+		echo -n | openssl s_client -connect "$DOMAIN:$PORT" -servername "$DOMAIN" $STARTTLS -prexit 2>/dev/null
+	elif [ "$GET" == "file" ] ; then
+		log "Get cert: Opening file $CERT_PATH"
+		cat "$CERT_PATH"
+	else
+		return 1
+	fi
+}
+
+filter() {
+	if [ "$SELECTOR" == "0" ] ; then
+		openssl x509
+	elif [ "$SELECTOR" == "1" ] ; then
+		openssl x509 -pubkey -noout
+	else
+		return 1
+	fi
+}
+
+encode() {
+	if [ "$TYPE" == "0" ] ; then
+		cat
+	elif [ "$TYPE" == "1" ] ; then
+		openssl dgst -sha256 -binary
+	elif [ "$TYPE" == "2" ] ; then
+		openssl dgst -sha512 -binary
+	else
+		return 1
+	fi
+}
+
+out() {
+	if [ "$OUT" == "rdata" ] ; then
+		echo "$USAGE $SELECTOR $TYPE $(cat)"
+	elif [ "$OUT" == "record" ] ; then
+		echo "_$PORT._$TRANS_PROT.$DOMAIN IN TLSA $USAGE $SELECTOR $TYPE $(cat)"
+	elif [ "$OUT" == "wildcard-record" ] ; then
+		echo "*._$TRANS_PROT.$DOMAIN IN TLSA $USAGE $SELECTOR $TYPE $(cat)"
+	elif [ "$OUT" == "update" ] ; then
+		echo "update add $PORT._$TRANS_PROT.$DOMAIN $TTL TLSA $USAGE $SELECTOR $TYPE $(cat)"
+	elif [ "$OUT" == "wildcard-update" ] ; then
+		echo "update add *._$TRANS_PROT.$DOMAIN $TTL TLSA $USAGE $SELECTOR $TYPE $(cat)"
+	elif [ "$OUT" == "data" ] ; then
+		cat
+	else
+		printUsage "Invalid output format: $OUT"
+	fi
+}
+
+
+
+while [ "$#" -gt "0" ] ; do
+	UPDATE_STARTTLS=false
+	
+	case "$1" in
+		"-f"|"--file")
+			GET="file"
+			CERT_PATH="$2"
+			shift
+			;;
+		"-s"|"--server")
+			GET="server"
+			DOMAIN="${2%%:*}"
+			if [ "$DOMAIN" != "$2" ] ; then
+				PORT="${2#*:}"
+			fi
+			UPDATE_STARTTLS=true
+			shift
+			;;
+		"-d"|"--domain")
+			DOMAIN="$2"
+			shift
+			;;
+		"-p"|"--port")
+			PORT="$2"
+			UPDATE_STARTTLS=true
+			shift
+			;;
+		"-t"|"--ttl")
+			TTL="$2"
+			shift
+			;;
+		"-3"|"--transport")
+			TRANS_PROT="$2"
+			shift
+			;;
+		"-o"|"--out")
+			OUT="$2"
+			shift
+			;;
+		"-a"|"--starttls")
+			STARTTLS="-starttls $2"
+			shift
+			;;
+		"-v"|"--verbose")
+			VERBOSE=true
+			;;
+		"-h"|"--help")
+			printUsage
+			;;
+		*)
+			break
+			;;
+	esac
+	
+	shift
+	
+	if $UPDATE_STARTTLS && [ -z "$STARTTLS" ] ; then
+		case "$PORT" in
+			"25"|"587")
+				STARTTLS="-starttls smtp"
+				;;
+			"110")
+				STARTTLS="-starttls pop3"
+				;;
+			"143")
+				STARTTLS="-starttls imap"
+				;;
+			"20")
+				STARTTLS="-starttls ftp"
+				;;
+		esac
+	fi
+done
+
+
+if [ $# -ge 1 ] ; then
+	case "$1" in
+		"0"|"PKIX-TA"|"pkix-ta")
+			USAGE="0"
+			;;
+		"1"|"PKIX-EE"|"pkix-ee")
+			USAGE="1"
+			;;
+		"2"|"DANE-TA"|"dane-ta")
+			USAGE="2"
+			;;
+		"3"|"DANE-EE"|"dane-ee")
+			USAGE="3"
+			;;
+		*)
+			printUsage "Invalid usage: $1"
+			;;
+	esac
+	shift
+fi
+
+if [ $# -ge 1 ] ; then
+	case "$1" in
+		"0"|"full")
+			SELECTOR="0"
+			;;
+		"1"|"spki")
+			SELECTOR="1"
+			;;
+		*)
+			printUsage "Invalid selector: $1"
+			;;
+	esac
+	shift
+fi
+
+if [ $# -ge 1 ] ; then
+	case "$1" in
+		"0"|"exact")
+			TYPE="0"
+			;;
+		"1"|"SHA256"|"sha256")
+			TYPE="1"
+			;;
+		"2"|"SHA512"|"sha512")
+			TYPE="2"
+			;;
+		*)
+			printUsage "Invalid type: $1"
+			;;
+	esac
+	shift
+fi
+
+
+if [ $# -ge 1 ] ; then
+	printUsage "Unknown extra arguments: $@"
+fi
+
+getCert | logStdin | filter | logStdin | openssl enc -base64 -d | encode | xxd -p | tr -d '\n' | out
