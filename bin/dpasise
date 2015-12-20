@@ -1,0 +1,93 @@
+#!/usr/bin/python
+
+import operator
+import subprocess
+
+
+def sh(args, stdin = None):
+	return subprocess.check_output(args, input = stdin, stderr = subprocess.STDOUT).decode("UTF-8")[:-1]
+
+order = [
+	('alsa_output.pci-0000_00_1b.0.analog-stereo', 'analog-output-speaker'),
+	('alsa_output.usb-0d8c_C-Media_USB_Headphone_Set-00.analog-stereo', 'analog-output-headphones'),
+	('alsa_output.pci-0000_00_1b.0.analog-stereo', 'analog-output-headphones'),
+	('bluez_sink.00_11_67_10_23_A8', 'headset-output'),
+]
+
+parsingPorts = False
+parsingProps = False
+sinks = {}
+for line in sh(['pacmd', 'list-sinks']).split('\n'):
+	if parsingPorts:
+		## Exit port parsing on dedent
+		if not line.startswith('\t\t'):
+			parsingPorts = False
+		
+		elif not line.startswith('\t\t\t'):
+			(portName, portRemaining) = line[2:].split(':', 1)
+			(portDsc, portRemaining) = portRemaining[1:].split(' (', 1)
+			if 'available: no' not in portRemaining or portDsc != 'Headphones':
+				try:
+					prio = order.index((sinkName, portName)) + 1
+				except ValueError:
+					prio = 0
+				
+				key = '%s %s' % (sinkDsc, portDsc)
+				sinks[key] = {
+					'key': key,
+					'prio': prio,
+					'sinkName': sinkName,
+					'sinkDsc': sinkDsc,
+					'portName': portName,
+					'portDsc': portDsc,
+				}
+	
+	elif parsingProps:
+		## Exit property parsing on dedent
+		if not line.startswith('\t\t'):
+			parsingProps = False
+		
+		## This name seems to exist always
+		elif sinkDsc is None and line.startswith('\t\tdevice.description'):
+			sinkDsc = line.split('"')[1]
+		
+		## This name is mostly nicer, but does not alywas exist
+		elif line.startswith('\t\talsa.name'):
+			sinkDsc = line.split('"')[1]
+	
+	
+	if line.startswith('\tname: '):
+		sinkName = line[8:-1]
+		sinkDsc = None
+	
+	elif line == '\tports:':
+		parsingPorts = True
+	
+	elif line == '\tproperties:':
+		parsingProps = True
+
+
+
+keys = list(sinks.values())
+keys.sort(key=operator.itemgetter('prio'), reverse=True)
+keyNames = map(operator.itemgetter('key'), keys)
+keyText = '\n'.join(keyNames).encode('UTF-8')
+
+try:
+	selectedKey = sh(['dmenu', '-i', '-l', '10', '-p', 'Select audio sink', '-nb', '#ccc', '-nf', '#000', '-sb', '#5f5', '-sf', '#000'], keyText)
+except subprocess.CalledProcessError:
+	selectedKey = None
+
+if selectedKey is not None:
+	selected = sinks[selectedKey]
+	
+	## Set new port
+	sh(['pacmd', 'set-sink-port', selected['sinkName'], selected['portName']])
+	
+	## Set new default sink
+	sh(['pacmd', 'set-default-sink', selected['sinkName']])
+	
+	## Move existing streams to new sink
+	for line in sh(['pacmd', 'list-sink-inputs']).split('\n'):
+		if line.startswith('    index: '):
+			sh(['pacmd', 'move-sink-input', line[11:], selected['sinkName']])
