@@ -1,0 +1,52 @@
+#!/bin/bash
+
+
+set -e
+
+defaultLen="12"
+defaultN="1"
+defaultAlphabet="_,.+@A-Za-z0-9"
+
+printUsage() {
+	echo "Usage: $(basename "$0") [LENGH] [N] [ALPHABET]" >&2
+	echo "" >&2
+	echo "  Generates some random passwords" >&2
+	echo "" >&2
+	echo "OPTIONS" >&2
+	echo "  LENGTH    The length of each password (default: $defaultLen)" >&2
+	echo "  N         Number of password lines printed (default: $defaultN)" >&2
+	echo "  ALPHABET  The alphabet of each password, in a tr command compatible syntax." >&2
+	echo "            For example \"A-Za-z0-9\" (default: \"$defaultAlphabet\")" >&2
+	exit ${1:-1}
+}
+
+
+if [ "$#" -eq 1 ] ; then
+	if [ "$1" == "-h" -o "$1" == "--help" ] ; then
+		printUsage 0
+	fi
+elif [ "$#" -gt 3 ] ; then
+	echo "Too many arguments" >&2
+	printUsage
+fi
+
+
+len=${1:-$defaultLen}
+n=${2:-$defaultN}
+alphabet=${3:-$defaultAlphabet}
+
+
+if ! [ "$len" -gt 0 ] 2>/dev/null ; then
+	echo "Invalid password length: $len" >&2
+	printUsage
+fi
+
+if ! [ "$n" -gt 0 ] 2>/dev/null ; then
+	echo "Invalid number of passwords: $len" >&2
+	printUsage
+fi
+
+for i in $(seq $n) ; do
+	tr -dc "$alphabet" < /dev/urandom | head -c$len
+	echo
+done
