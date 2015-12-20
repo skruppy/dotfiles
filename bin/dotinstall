@@ -100,7 +100,7 @@ rm "$HOME/.dot/tmp"
 
 for f in \
 	thunderbird \
-	pidgin \
+	gajim \
 	keepass-keepass
 do
 	SRC="/usr/share/applications/$f.desktop"
