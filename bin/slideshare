@@ -1,0 +1,68 @@
+#!/bin/bash
+
+## From https://github.com/fede1024/slideshare-downloader
+## This can be done fancyer, if one finds a way to convert swf to pdf as real
+## vector graphics
+
+set -e
+
+printUsage() {
+	echo "Usage: $(basename "$0") URL" >&2
+	echo "" >&2
+	echo "  download slideshare slides as pdf." >&2
+	echo "" >&2
+	echo "  URL  The normal URL of the slides" >&2
+	exit ${1:-1}
+}
+
+if [ "$#" -ne 1 ] ; then
+	echo "Missing URL or additional arguments" >&2
+	printUsage
+fi
+
+if [ "$1" == "-h" -o "$1" == "--help" ] ; then
+	printUsage 0
+fi
+
+
+DOWNLOAD_THREADS=5
+CONVERSION_THREADS=4
+OUTPUT_FILE="output.pdf"
+
+## Find thumbnail xml url
+list_addr=`wget -q -O- "$1" | grep -o -E '<meta name="thumbnail" content="[^?]*' | grep -o 'http.*'`
+
+if [ -z "$list_addr" ] ; then
+	echo "Page format unknown :(" >&1
+	exit 1
+fi
+
+## Convert thumbnail xml url to slides xml url
+list_addr=`echo $list_addr | sed s-ss_thumbnails/-- | sed s/-thumbnail.jpg/.xml/`
+
+## Get list for slides form slides xml
+files=`wget -q -O- "$list_addr" | grep -oE 'https?[^"]*'`
+
+if [ -z "$files" ]; then
+	echo "Cannot download list of slide :("
+	exit 1
+fi
+
+## Download slides as SWF
+tmp=`mktemp -d`
+echo "Downloading in $tmp"
+echo "$files" | xargs -n1 -P$DOWNLOAD_THREADS  wget -q -P "$tmp"
+
+## Convert SWF to PNG
+echo "Converting to png"
+find "$tmp" -name '*.swf' | xargs -n1 -P$CONVERSION_THREADS -i swfrender '{}' -o '{}'.png
+
+## Merge PNGs into one PDF
+echo "Merge into pdf"
+pngs=`find "$tmp" -name '*png' | sort --version-sort`
+convert $pngs "$OUTPUT_FILE"
+
+## Cleaning up
+echo "Done. $OUTPUT_FILE created."
+rm -rf $tmp
+
