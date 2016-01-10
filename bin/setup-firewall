@@ -116,14 +116,15 @@ ipt6 -A OUTPUT -p ipv6-icmp -j ACCEPT
 ##    53/UDPx: DNS
 ##    53/TCPx: DNS
 ##   123/UDPx: NTP
-##   123/TCPx: NTP
+##  (123/TCPx: NTP)
+##   873/TCPx: Rsync
+##  (873/UDPx: Rsync)
 ##  5353/UDPx: Avahi
+##   137/UDPx: NetBios
 ## DHCP seems to use raw sockets, which can't be filtered
-iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067,43 -j ACCEPT
-iptx -A OUTPUT -p udp -m multiport --dports 60001:60999 -j ACCEPT
+iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067,43,873 -j ACCEPT
+iptx -A OUTPUT -p udp -m multiport --dports 123,60001:60999 -j ACCEPT
 for p in udp tcp ; do
-	iptx -A OUTPUT -p $p -m multiport --dports 123 -j ACCEPT
-	
 	## Allow only unbound, who checks DNSSEC records, to do DNS queries
 	iptx -A OUTPUT -p $p -m owner --uid-owner $(id -u unbound) --dport 53 -j ACCEPT
 done
@@ -131,6 +132,8 @@ iptx -A OUTPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 iptx -A OUTPUT -m cgroup --cgroup 0x00420001  -j ACCEPT
 
 ## Log and reject
+iptx -A OUTPUT -p udp -m multiport --dports 137 -j DROP
+
 iptx -A OUTPUT -m limit --limit 10/min -j LOG --log-prefix "iptables: Reject OUT: " --log-level 7
 
 iptx -A OUTPUT -p tcp -j REJECT --reject-with tcp-reset
