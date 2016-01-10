@@ -1,0 +1,115 @@
+#!/bin/bash
+
+set -e
+
+call() {
+	echo "$@"
+	"$@"
+}
+
+
+iptx() {
+	ipt4 "$@"
+	ipt6 "$@"
+}
+
+
+ipt4() {
+	call iptables "$@"
+}
+
+
+ipt6() {
+	call ip6tables "$@"
+}
+
+
+cgcreate -g net_cls:fullnet
+echo 0x00420001 > /sys/fs/cgroup/net_cls/fullnet/net_cls.classid
+chmod 666 /sys/fs/cgroup/net_cls/fullnet/tasks
+
+
+iptx -Z
+
+
+## == Table: mangle
+iptx -t mangle -F
+iptx -t mangle -X
+iptx -t mangle -P PREROUTING ACCEPT
+iptx -t mangle -P INPUT ACCEPT
+iptx -t mangle -P FORWARD ACCEPT
+iptx -t mangle -P OUTPUT ACCEPT
+iptx -t mangle -P POSTROUTING ACCEPT
+
+
+## == Table: nat
+ipt4 -t nat -F
+ipt4 -t nat -X
+ipt4 -t nat -P PREROUTING ACCEPT
+ipt4 -t nat -P INPUT ACCEPT
+ipt4 -t nat -P OUTPUT ACCEPT
+ipt4 -t nat -P POSTROUTING ACCEPT
+
+
+## == Table: filter
+iptx -F
+iptx -X
+iptx -P INPUT DROP
+iptx -P FORWARD DROP
+iptx -P OUTPUT DROP
+
+
+## Nice aproach: https://www.digitalocean.com/community/tutorials/how-to-list-and-delete-iptables-firewall-rules
+## Can be used for home net detection: http://www.netfilter.org/documentation/HOWTO/netfilter-extensions-HOWTO-3.html#ss3.2
+## cgroups: http://habrahabr.ru/post/274445/
+
+## Accept canonical
+iptx -A INPUT -i lo -j ACCEPT
+ipt4 -A INPUT -p icmp -j ACCEPT
+ipt6 -A INPUT -p ipv6-icmp -j ACCEPT
+
+## Accept special ports
+##    22/TCPx: SSH
+## 22000/TCPx: syncthing (data)
+## 21027/UDPx: syncthing (broadcast)
+##  5353/UDPx: Avahi
+iptx -A INPUT -p tcp -m multiport --dports 22,22000 -j ACCEPT
+iptx -A INPUT -p udp -m multiport --dports 21027,5353 -j ACCEPT
+iptx -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+## Log and reject
+iptx -A INPUT -m limit --limit 10/min -j LOG --log-prefix "iptables: Reject IN: " --log-level 7
+iptx -A INPUT -p tcp -j REJECT --reject-with tcp-reset
+ipt4 -A INPUT -j REJECT --reject-with icmp-proto-unreachable
+ipt6 -A INPUT -j REJECT
+
+
+
+## Accept canonical
+iptx -A OUTPUT -o lo -j ACCEPT
+ipt4 -A OUTPUT -p icmp -j ACCEPT
+ipt6 -A OUTPUT -p ipv6-icmp -j ACCEPT
+
+## Accept special ports
+##    22/TCPx: SSH
+## 22000/TCPx: syncthing (data)
+## 22067/TCPx: syncthing (relay)
+##    80/TCPx: HTTP
+##   443/TCPx: HTTPS
+##   993/TCPx: IMAPS
+##   465/TCPx: SMTPS
+##  5222/TCPx: XMPP
+##   631/TCPx: IPP
+##    53/UDPx: DNS
+## 21027/UDPx: syncthing (broadcast)
+##  5353/UDPx: Avahi
+iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067 -j ACCEPT
+iptx -A OUTPUT -p udp -m multiport --dports 53,60001:60999 -j ACCEPT
+iptx -A OUTPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptx -A OUTPUT -m cgroup --cgroup 0x00420001  -j ACCEPT
+
+## Log and reject
+iptx -A OUTPUT -m limit --limit 10/min -j LOG --log-prefix "iptables: Reject OUT: " --log-level 7
+iptx -A OUTPUT -p tcp -j REJECT --reject-with tcp-reset
+ipt4 -A OUTPUT -j REJECT --reject-with icmp-proto-unreachable
+ipt6 -A OUTPUT -j REJECT
