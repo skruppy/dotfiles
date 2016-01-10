@@ -3,8 +3,12 @@
 set -e
 
 call() {
-	echo "$@"
-	"$@"
+	if ! "$@" ; then
+		ret="$?"
+		echo "$@" >&2
+		echo "Execution failed with exit code $ret." >&2
+		exit $?
+	fi
 }
 
 
@@ -26,7 +30,8 @@ ipt6() {
 
 cgcreate -g net_cls:fullnet
 echo 0x00420001 > /sys/fs/cgroup/net_cls/fullnet/net_cls.classid
-chmod 666 /sys/fs/cgroup/net_cls/fullnet/tasks
+chmod 660 /sys/fs/cgroup/net_cls/fullnet/tasks
+chown root:fullnet /sys/fs/cgroup/net_cls/fullnet/tasks
 
 
 iptx -Z
@@ -58,8 +63,8 @@ iptx -P INPUT DROP
 iptx -P FORWARD DROP
 iptx -P OUTPUT DROP
 
-
-## Nice aproach: https://www.digitalocean.com/community/tutorials/how-to-list-and-delete-iptables-firewall-rules
+## watch -d -n 2 iptables  -nvL
+## Nice approach: https://www.digitalocean.com/community/tutorials/how-to-list-and-delete-iptables-firewall-rules
 ## Can be used for home net detection: http://www.netfilter.org/documentation/HOWTO/netfilter-extensions-HOWTO-3.html#ss3.2
 ## cgroups: http://habrahabr.ru/post/274445/
 
@@ -79,9 +84,15 @@ iptx -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
 ## Log and reject
 iptx -A INPUT -m limit --limit 10/min -j LOG --log-prefix "iptables: Reject IN: " --log-level 7
-iptx -A INPUT -p tcp -j REJECT --reject-with tcp-reset
-ipt4 -A INPUT -j REJECT --reject-with icmp-proto-unreachable
-ipt6 -A INPUT -j REJECT
+
+iptx -A OUTPUT -p tcp -j REJECT --reject-with tcp-reset
+
+ipt4 -A OUTPUT -p udp -j REJECT --reject-with icmp-port-unreachable
+ipt6 -A OUTPUT -p udp -j REJECT --reject-with icmp6-port-unreachable
+
+ipt4 -A OUTPUT -j REJECT --reject-with icmp-proto-unreachable
+ipt6 -A OUTPUT -j REJECT
+
 
 
 
@@ -94,22 +105,38 @@ ipt6 -A OUTPUT -p ipv6-icmp -j ACCEPT
 ##    22/TCPx: SSH
 ## 22000/TCPx: syncthing (data)
 ## 22067/TCPx: syncthing (relay)
+## 21027/UDPx: syncthing (broadcast)
 ##    80/TCPx: HTTP
 ##   443/TCPx: HTTPS
 ##   993/TCPx: IMAPS
 ##   465/TCPx: SMTPS
 ##  5222/TCPx: XMPP
 ##   631/TCPx: IPP
+##    43/TCPx: Who is
 ##    53/UDPx: DNS
-## 21027/UDPx: syncthing (broadcast)
+##    53/TCPx: DNS
+##   123/UDPx: NTP
+##   123/TCPx: NTP
 ##  5353/UDPx: Avahi
-iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067 -j ACCEPT
-iptx -A OUTPUT -p udp -m multiport --dports 53,60001:60999 -j ACCEPT
+## DHCP seems to use raw sockets, which can't be filtered
+iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067,43 -j ACCEPT
+iptx -A OUTPUT -p udp -m multiport --dports 60001:60999 -j ACCEPT
+for p in udp tcp ; do
+	iptx -A OUTPUT -p $p -m multiport --dports 123 -j ACCEPT
+	
+	## Allow only unbound, who checks DNSSEC records, to do DNS queries
+	iptx -A OUTPUT -p $p -m owner --uid-owner $(id -u unbound) --dport 53 -j ACCEPT
+done
 iptx -A OUTPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 iptx -A OUTPUT -m cgroup --cgroup 0x00420001  -j ACCEPT
 
 ## Log and reject
 iptx -A OUTPUT -m limit --limit 10/min -j LOG --log-prefix "iptables: Reject OUT: " --log-level 7
+
 iptx -A OUTPUT -p tcp -j REJECT --reject-with tcp-reset
+
+ipt4 -A OUTPUT -p udp -j REJECT --reject-with icmp-port-unreachable
+ipt6 -A OUTPUT -p udp -j REJECT --reject-with icmp6-port-unreachable
+
 ipt4 -A OUTPUT -j REJECT --reject-with icmp-proto-unreachable
 ipt6 -A OUTPUT -j REJECT
