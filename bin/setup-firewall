@@ -33,6 +33,38 @@ echo 0x00420001 > /sys/fs/cgroup/net_cls/fullnet/net_cls.classid
 chmod 660 /sys/fs/cgroup/net_cls/fullnet/tasks
 chown root:fullnet /sys/fs/cgroup/net_cls/fullnet/tasks
 
+## watch -d -n 2 iptables  -nvL
+## Nice approach: https://www.digitalocean.com/community/tutorials/how-to-list-and-delete-iptables-firewall-rules
+## Can be used for home net detection: http://www.netfilter.org/documentation/HOWTO/netfilter-extensions-HOWTO-3.html#ss3.2
+## cgroups: http://habrahabr.ru/post/274445/
+
+##    22/TCPx: SSH
+##    67/UDP4: DHCP Server
+##    68/UDP4: DHCP Client
+## 22000/TCPx: syncthing (data)
+## 22067/TCPx: syncthing (relay)
+## 21027/UDPx: syncthing (broadcast)
+##    80/TCPx: HTTP
+##   443/TCPx: HTTPS
+##   993/TCPx: IMAPS
+##   465/TCPx: SMTPS
+##  5222/TCPx: XMPP
+##   631/TCPx: IPP
+##    43/TCPx: Who is
+##    53/UDPx: DNS
+##    53/TCPx: DNS
+##   123/UDPx: NTP
+##  (123/TCPx: NTP)
+##  9418/TCPx: Native GIT
+## (9418/UDPx: Native GIT)
+##   873/TCPx: Rsync
+##  (873/UDPx: Rsync)
+##  5353/UDPx: Avahi
+##   137/UDPx: NetBios Name Service
+##   138/UDPx: NetBios Datagram
+## 19375/UDPx: "whoisthere"
+## DHCP seems to use raw sockets, which can't be filtered
+
 
 iptx -Z
 
@@ -63,83 +95,106 @@ iptx -P INPUT DROP
 iptx -P FORWARD DROP
 iptx -P OUTPUT DROP
 
-## watch -d -n 2 iptables  -nvL
-## Nice approach: https://www.digitalocean.com/community/tutorials/how-to-list-and-delete-iptables-firewall-rules
-## Can be used for home net detection: http://www.netfilter.org/documentation/HOWTO/netfilter-extensions-HOWTO-3.html#ss3.2
-## cgroups: http://habrahabr.ru/post/274445/
+# iptx -P INPUT ACCEPT
+# iptx -P FORWARD ACCEPT
+# iptx -P OUTPUT ACCEPT
+# exit 0
 
-## Accept canonical
+iptx -N IN_LOG
+iptx -N OUT_LOG
+
+## === INPUT
+## ==== Accept canonical
 iptx -A INPUT -i lo -j ACCEPT
 ipt4 -A INPUT -p icmp -j ACCEPT
 ipt6 -A INPUT -p ipv6-icmp -j ACCEPT
 
-## Accept special ports
-##    22/TCPx: SSH
-## 22000/TCPx: syncthing (data)
-## 21027/UDPx: syncthing (broadcast)
-##  5353/UDPx: Avahi
+## ==== Accept special ports
+## TCP (simple)
 iptx -A INPUT -p tcp -m multiport --dports 22,22000 -j ACCEPT
-iptx -A INPUT -p udp -m multiport --dports 21027,5353 -j ACCEPT
+
+## UDP (simple)
+iptx -A INPUT -p udp -m multiport --dports 21027 -j ACCEPT
+
+## DHCP (why isn't conntrack sufficient?)
+ipt6 -A INPUT -p udp --sport 547 --dport 546 -j ACCEPT
+
+## Avahi
+ipt4 -A INPUT -p udp --dport 5353 -d 224.0.0.251 -j ACCEPT
+ipt6 -A INPUT -p udp --dport 5353 -d ff02::fb -j ACCEPT
+
+## Existing connections
 iptx -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
-## Log and reject
-iptx -A INPUT -m limit --limit 10/min -j LOG --log-prefix "iptables: Reject IN: " --log-level 7
+## ==== Reject remaining
+## Log
+iptx -A INPUT -j IN_LOG
 
-iptx -A OUTPUT -p tcp -j REJECT --reject-with tcp-reset
+## Reject TCP
+iptx -A INPUT -p tcp -j REJECT --reject-with tcp-reset
 
-ipt4 -A OUTPUT -p udp -j REJECT --reject-with icmp-port-unreachable
-ipt6 -A OUTPUT -p udp -j REJECT --reject-with icmp6-port-unreachable
+## Reject UDP
+ipt4 -A INPUT -p udp -j REJECT --reject-with icmp-port-unreachable
+ipt6 -A INPUT -p udp -j REJECT --reject-with icmp6-port-unreachable
 
-ipt4 -A OUTPUT -j REJECT --reject-with icmp-proto-unreachable
-ipt6 -A OUTPUT -j REJECT
+## Reject Remaining
+ipt4 -A INPUT -j REJECT --reject-with icmp-proto-unreachable
+ipt6 -A INPUT -j REJECT
+
+## === IN_LOG
+## Log filter
+iptx -A IN_LOG -m pkttype --pkt-type broadcast -j RETURN
+
+## Log
+iptx -A IN_LOG -m limit --limit 10/min -j LOG --log-prefix "iptables: Reject IN: " --log-level 7
 
 
 
-
-## Accept canonical
+## === OUTPUT
+## ==== Accept canonical
 iptx -A OUTPUT -o lo -j ACCEPT
+ipt4 -A OUTPUT -p igmp -j ACCEPT
 ipt4 -A OUTPUT -p icmp -j ACCEPT
 ipt6 -A OUTPUT -p ipv6-icmp -j ACCEPT
 
-## Accept special ports
-##    22/TCPx: SSH
-## 22000/TCPx: syncthing (data)
-## 22067/TCPx: syncthing (relay)
-## 21027/UDPx: syncthing (broadcast)
-##    80/TCPx: HTTP
-##   443/TCPx: HTTPS
-##   993/TCPx: IMAPS
-##   465/TCPx: SMTPS
-##  5222/TCPx: XMPP
-##   631/TCPx: IPP
-##    43/TCPx: Who is
-##    53/UDPx: DNS
-##    53/TCPx: DNS
-##   123/UDPx: NTP
-##  (123/TCPx: NTP)
-##   873/TCPx: Rsync
-##  (873/UDPx: Rsync)
-##  5353/UDPx: Avahi
-##   137/UDPx: NetBios
-## DHCP seems to use raw sockets, which can't be filtered
-iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067,43,873 -j ACCEPT
+## ==== Accept special ports
+## TCP (simple)
+iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067,43,873,9418 -j ACCEPT
+
+## UDP (simple)
 iptx -A OUTPUT -p udp -m multiport --dports 123,60001:60999 -j ACCEPT
+
+## DHCP
+ipt4 -A OUTPUT -p udp --sport 68 --dport 67 -j ACCEPT
+ipt6 -A OUTPUT -p udp --sport 546 --dport 547 -j ACCEPT
+
+## TCP and UDP
 for p in udp tcp ; do
 	## Allow only unbound, who checks DNSSEC records, to do DNS queries
 	iptx -A OUTPUT -p $p -m owner --uid-owner $(id -u unbound) --dport 53 -j ACCEPT
 done
+
+## Existing connections
 iptx -A OUTPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+## Started by "fullnet"
 iptx -A OUTPUT -m cgroup --cgroup 0x00420001  -j ACCEPT
 
-## Log and reject
-iptx -A OUTPUT -p udp -m multiport --dports 137 -j DROP
+## ==== Reject remaining
+## Log
+iptx -A OUTPUT -j OUT_LOG
 
-iptx -A OUTPUT -m limit --limit 10/min -j LOG --log-prefix "iptables: Reject OUT: " --log-level 7
-
+## Reject TCP
 iptx -A OUTPUT -p tcp -j REJECT --reject-with tcp-reset
 
+## Reject UDP
 ipt4 -A OUTPUT -p udp -j REJECT --reject-with icmp-port-unreachable
 ipt6 -A OUTPUT -p udp -j REJECT --reject-with icmp6-port-unreachable
 
+## Reject Remaining
 ipt4 -A OUTPUT -j REJECT --reject-with icmp-proto-unreachable
 ipt6 -A OUTPUT -j REJECT
+
+## === OUT_LOG
+## Log
+iptx -A OUT_LOG -m limit --limit 10/min -j LOG --log-prefix "iptables: Reject OUT: " --log-level 7
