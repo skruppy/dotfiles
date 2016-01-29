@@ -50,19 +50,20 @@ chown root:fullnet /sys/fs/cgroup/net_cls/fullnet/tasks
 ##   465/TCPx: SMTPS
 ##  5222/TCPx: XMPP
 ##   631/TCPx: IPP
+##  9100/TCPx: HP JetDirect
 ##    43/TCPx: Who is
 ##    53/UDPx: DNS
 ##    53/TCPx: DNS
 ##   123/UDPx: NTP
-##  (123/TCPx: NTP)
 ##  9418/TCPx: Native GIT
-## (9418/UDPx: Native GIT)
 ##   873/TCPx: Rsync
-##  (873/UDPx: Rsync)
 ##  5353/UDPx: Avahi
 ##   137/UDPx: NetBios Name Service
 ##   138/UDPx: NetBios Datagram
 ## 19375/UDPx: "whoisthere"
+##  3632/TCPx: DistCC
+## 64738/TCPx: Mumble control
+## 64738/UDPx: Mumble speach
 ## DHCP seems to use raw sockets, which can't be filtered
 
 
@@ -106,12 +107,13 @@ iptx -N OUT_LOG
 ## === INPUT
 ## ==== Accept canonical
 iptx -A INPUT -i lo -j ACCEPT
+ipt4 -A INPUT -p igmp -j ACCEPT
 ipt4 -A INPUT -p icmp -j ACCEPT
 ipt6 -A INPUT -p ipv6-icmp -j ACCEPT
 
 ## ==== Accept special ports
 ## TCP (simple)
-iptx -A INPUT -p tcp -m multiport --dports 22,22000 -j ACCEPT
+iptx -A INPUT -p tcp -m multiport --dports 22,22000,3632 -j ACCEPT
 
 ## UDP (simple)
 iptx -A INPUT -p udp -m multiport --dports 21027 -j ACCEPT
@@ -143,7 +145,7 @@ ipt6 -A INPUT -j REJECT
 
 ## === IN_LOG
 ## Log filter
-iptx -A IN_LOG -m pkttype --pkt-type broadcast -j RETURN
+iptx -A IN_LOG -m pkttype ! --pkt-type unicast -j RETURN
 
 ## Log
 iptx -A IN_LOG -m limit --limit 10/min -j LOG --log-prefix "iptables: Reject IN: " --log-level 7
@@ -159,10 +161,10 @@ ipt6 -A OUTPUT -p ipv6-icmp -j ACCEPT
 
 ## ==== Accept special ports
 ## TCP (simple)
-iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067,43,873,9418 -j ACCEPT
+iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067,43,873,9418,64738,9100 -j ACCEPT
 
 ## UDP (simple)
-iptx -A OUTPUT -p udp -m multiport --dports 123,60001:60999 -j ACCEPT
+iptx -A OUTPUT -p udp -m multiport --dports 123,60001:60999,64738 -j ACCEPT
 
 ## DHCP
 ipt4 -A OUTPUT -p udp --sport 68 --dport 67 -j ACCEPT
