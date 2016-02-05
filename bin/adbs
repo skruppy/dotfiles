@@ -1,0 +1,21 @@
+#!/bin/sh
+
+
+adb shell "sudo -u phablet bash -c '/usr/bin/gdbus call -y \
+        -d com.canonical.PropertyService -o /com/canonical/PropertyService \
+        -m com.canonical.PropertyService.SetProperty ssh true' >/dev/null"
+
+adb forward tcp:2222 tcp:22
+
+while ! echo | nc localhost 2222 >/dev/null 2>&1 ; do
+	echo "Waiting for sshd to come up"
+done
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p 2222 phablet@localhost 2>/dev/null
+ec=$?
+
+adb shell "sudo -u phablet bash -c '/usr/bin/gdbus call -y \
+        -d com.canonical.PropertyService -o /com/canonical/PropertyService \
+        -m com.canonical.PropertyService.SetProperty ssh false' >/dev/null"
+
+exit $ec
