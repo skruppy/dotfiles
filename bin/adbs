@@ -9,6 +9,7 @@ adb forward tcp:2222 tcp:22
 
 while ! echo | nc localhost 2222 >/dev/null 2>&1 ; do
 	echo "Waiting for sshd to come up"
+	sleep 1
 done
 
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p 2222 phablet@localhost 2>/dev/null
