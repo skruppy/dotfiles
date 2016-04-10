@@ -145,4 +145,6 @@ vnoremap <C-S> <C-C>:update<CR>
 inoremap <C-S> <C-O>:update<CR>
 
 
+"set mouse=a
+nnoremap ; :
 
