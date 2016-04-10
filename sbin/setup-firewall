@@ -171,6 +171,10 @@ iptx -A OUTPUT -p udp -m multiport --dports 123,60001:60999,64738 -j ACCEPT
 ipt4 -A OUTPUT -p udp --sport 68 --dport 67 -j ACCEPT
 ipt6 -A OUTPUT -p udp --sport 546 --dport 547 -j ACCEPT
 
+## Avahi
+ipt4 -A OUTPUT -p udp --dport 5353 -d 224.0.0.251 -j ACCEPT
+ipt6 -A OUTPUT -p udp --dport 5353 -d ff02::fb -j ACCEPT
+
 ## TCP and UDP
 for p in udp tcp ; do
 	## Allow only unbound, who checks DNSSEC records, to do DNS queries
