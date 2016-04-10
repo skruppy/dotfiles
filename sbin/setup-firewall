@@ -64,6 +64,7 @@ chown root:fullnet /sys/fs/cgroup/net_cls/fullnet/tasks
 ##  3632/TCPx: DistCC
 ## 64738/TCPx: Mumble control
 ## 64738/UDPx: Mumble speach
+##  6600/TCPx: MPD
 ## DHCP seems to use raw sockets, which can't be filtered
 
 
@@ -161,7 +162,7 @@ ipt6 -A OUTPUT -p ipv6-icmp -j ACCEPT
 
 ## ==== Accept special ports
 ## TCP (simple)
-iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067,43,873,9418,64738,9100 -j ACCEPT
+iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067,43,873,9418,64738,9100,6600 -j ACCEPT
 
 ## UDP (simple)
 iptx -A OUTPUT -p udp -m multiport --dports 123,60001:60999,64738 -j ACCEPT
