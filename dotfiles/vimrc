@@ -114,7 +114,7 @@ set splitright
 
 
 "" Make file "unix like"
-noremap <F9> :set fileencoding=utf-8<CR>:set ff=unix<CR>
+noremap  <F9>      :set fileencoding=utf-8<CR>:set ff=unix<CR>
 vnoremap <F9> <C-C>:set fileencoding=utf-8<CR><C-C>:set ff=unix<CR>
 inoremap <F9> <C-O>:set fileencoding=utf-8<CR><C-O>:set ff=unix<CR>
 
@@ -130,6 +130,7 @@ set shiftwidth=4
 
 set copyindent
 set preserveindent
+
 
 "" Dont remove the identation when leave insert mode
 inoremap <CR> <CR>x<BS>
@@ -148,3 +149,7 @@ inoremap <C-S> <C-O>:update<CR>
 "set mouse=a
 nnoremap ; :
 
+
+"" Use Q for formatting the current paragraph (or selection)
+vmap Q gq
+nmap Q gqap
