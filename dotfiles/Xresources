@@ -1,39 +1,41 @@
 !! Colors
-URxvt*foreground:            White
-URxvt*background:            Black
+URxvt.foreground:            White
+URxvt.background:            Black
+URxvt.color4:                #77beFF
+URxvt.color12:               #77beFF
 
 
 !! Font
-URxvt*font:                  xft:Droid Sans Mono Slashed Extra-7.5
+URxvt.font:                  xft:Droid Sans Mono Slashed Extra-7.5
 
 
 !! Scrollbar
 !! Style: rxvt (default), plain (most compact), next, or xterm
 !! Buffer size: max. 65535
-URxvt*scrollstyle:           plain
-URxvt*saveLines:             10000
-URxvt*scrollBar_right:       true
+URxvt.scrollstyle:           plain
+URxvt.saveLines:             10000
+URxvt.scrollBar_right:       true
 
 
 !! Icon
-URxvt*iconFile:              /usr/share/icons/oxygen/16x16/apps/utilities-terminal.png
-URxvt*urgentOnBell:          true
+URxvt.iconFile:              /usr/share/icons/oxygen/16x16/apps/utilities-terminal.png
+URxvt.urgentOnBell:          true
 
 
 !! Open in browser
-URxvt*perl-ext-common:       default,matcher,font-size
-URxvt*url-launcher:          xdg-open
+URxvt.perl-ext-common:       default,matcher,font-size
+URxvt.url-launcher:          xdg-open
 
 
 !! Open in editor
-URxvt*matcher.button:        1
-URxvt*matcher.pattern.1:     \\B(/\\S+?):(\\d+)(?=:|$)
-URxvt*matcher.launcher.1:    kate -l $2 $1
+URxvt.matcher.button:        1
+URxvt.matcher.pattern.1:     \\B(/\\S+?):(\\d+)(?=:|$)
+URxvt.matcher.launcher.1:    kate -l $2 $1
 
 
 !! Send escape character instead of something strange on meta keys (required for weechat and emacs)
-UXTerm*metaSendsEscape:      true
-URxvt*metaSendsEscape:       true
+!UXTerm.metaSendsEscape:      true
+URxvt.metaSendsEscape:       true
 
 
 !! Font size
@@ -49,10 +51,8 @@ URxvt.iso14755:              false
 URxvt.iso14755_52:           false
 
 
-!! Disable printing
-URxvt.print-pipe:            cat >/dev/null
-
-
 !! Emacs
 URxvt.keysym.C-BackSpace:    \033[33~
 URxvt.keysym.C-S-BackSpace:  \033[27;6;15~
+
+
