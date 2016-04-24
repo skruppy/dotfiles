@@ -66,3 +66,4 @@ export LS_COLORS='rs=0:di=01;36:ln=36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;'\
 
 ## gtk, STFU!
 export NO_AT_BRIDGE=1
+export KDE_IS_PRELINKED=1
