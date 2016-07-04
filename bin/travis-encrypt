@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -e
+
+OWNER="$1"
+REPO="$2"
+DATA="$3"
+
+PK_FILE=/tmp/travis-key
+
+key() {
+	wget --quiet -O - "https://api.travis-ci.org/repos/$OWNER/$REPO/key" |
+	sed "s/^.*\(-----BEGIN\( RSA\)\? PUBLIC KEY-----.*-----END\( RSA\)\? PUBLIC KEY-----\\\\n\).*$/\1/" |
+	sed "s/\\\\n/\n/g"
+	## python -c 'import json,sys; print(json.load(sys.stdin)["key"])'
+}
+
+printf 'secure: "%s"\n' $(echo -n "$DATA" | openssl pkeyutl -encrypt -pubin -inkey <(key) | base64 --wrap 0)
