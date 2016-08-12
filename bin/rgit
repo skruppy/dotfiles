@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+
+
+path="$(realpath --canonicalize-existing "${@: -1}")"
+
+repo="$path"
+while true ; do
+	## Path is a git root directory -> cd into it & done
+	if [ -d "$repo/.git" ] ; then
+		cd "$repo"
+		break
+	
+	## We can't go any more levels up -> Exit
+	elif [ "$repo" == "/" ] ; then
+		echo "\"$repo\" is not in git repo" >&2
+		exit 1
+	
+	## Go one level up
+	else
+		repo="$(dirname "$repo")"
+	fi
+done
+
+
+## Directory -> Drop the last parameter
+if [ -d "$path" ] ; then
+	exec git "${@:1:$#-1}"
+
+## File -> Make last parameter an absolute path
+else
+	exec git "${@:1:$#-1}" "$path"
+fi
