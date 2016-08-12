@@ -1,0 +1,31 @@
+"1.1
+
+loadplugins '\.(js|penta)$'
+group user
+set guioptions=bCrNs
+set hintkeys=0123456789qwertyuiopasdfghjklzxcvbnm
+
+"" Highlight all /find pattern matches on the current page after submission 
+set hlfind
+
+"set scrolltime=0
+
+"" Disable macro recording
+map q <Nop>
+
+"" Normal Mode Mappings
+nnoremap <C-a> <C-v><C-a>
+nnoremap <C-c> <C-v><C-c>
+nnoremap <C-v> <C-v><C-v>
+nnoremap <C-x> <C-v><C-x>
+
+"" Insert Mode Mappings
+inoremap <C-a> <C-v><C-a>
+inoremap <C-c> <C-v><C-c>
+inoremap <C-v> <C-v><C-v>
+inoremap <C-x> <C-v><C-x>
+
+"" Open video in external player
+map q :execute "!youtube-viewer -1 -q -f '" + content.location.href + "'"<CR><CR>
+
+" vim: set ft=pentadactyl:
