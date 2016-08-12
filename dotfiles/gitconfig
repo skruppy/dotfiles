@@ -1,0 +1,12 @@
+[color]
+	ui = auto
+[merge]
+	defaultToUpstream = true
+[push]
+	default = simple
+[diff]
+	compactionHeuristic = true
+[pull]
+	rebase = preserve
+[alias]
+	uncommit = reset --soft HEAD^
