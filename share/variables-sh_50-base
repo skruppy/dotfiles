@@ -67,3 +67,12 @@ export LS_COLORS='rs=0:di=01;36:ln=36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;'\
 ## gtk, STFU!
 export NO_AT_BRIDGE=1
 export KDE_IS_PRELINKED=1
+export npm_config_prefix="$HOME/.cache/node"
+export NODE_PATH="$HOME/.cache/node/lib/node_modules"
+export GOHOME="$HOME/.cache/go"
+export MANPATH="/opt/texlive/2016/texmf-dist/doc/man:$HOME/.cache/node/share/man:$MANPATH"
+
+if type ruby >/dev/null 2>&1 ; then
+	export PATH="$(ruby -rubygems -e 'puts Gem.user_dir')/bin:$PATH"
+fi
+export PATH="$DOT_DIR/bin:/opt/texlive/2016/bin/x86_64-linux:$GOHOME/bin:$HOME/.cache/node/bin:$PATH:$DOT_DIR/bin-fallback"
