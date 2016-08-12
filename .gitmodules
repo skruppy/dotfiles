@@ -1,3 +1,9 @@
 [submodule "share/urxvt-font-size"]
 	path = share/urxvt-font-size
 	url = https://github.com/majutsushi/urxvt-font-size.git
+[submodule "share/mmbar"]
+	path = share/mmbar
+	url = https://github.com/Skrupellos/mmbar.git
+[submodule "share/pulsemixer"]
+	path = share/pulsemixer
+	url = https://github.com/GeorgeFilipkin/pulsemixer.git
