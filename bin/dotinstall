@@ -133,6 +133,9 @@ if type git >/dev/null 2>&1 ; then
 	if type kdiff3 >/dev/null 2>&1 ; then
 		setGitCfg merge.tool "kdiff3"
 	fi
+	if type nano >/dev/null 2>&1 ; then
+		setGitCfg core.editor "nano -t"
+	fi
 fi
 
 ## -- i3 -----------------------------------------------------------------------
