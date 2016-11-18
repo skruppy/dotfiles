@@ -1,0 +1,88 @@
+#!/bin/bash
+
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@" >&2
+	fi
+	
+	echo "Usage: $(basename "$0") OPTIONS IN [OUT]" >&2
+	echo "" >&2
+	echo "  Converts fonts to pathes in IN" >&2
+	
+	test "$#" -eq 0
+	exit "$?"
+}
+
+
+open() {
+	if [ "$TYPE" == "pdf" ] ; then
+		cat "$IN"
+	elif [ "$AREA" == "page" ] ; then
+		inkscape --export-area-page --export-pdf /dev/stdout "$IN"
+	elif [ "$AREA" == "drawing" ] ; then
+		inkscape --export-area-drawing --export-pdf /dev/stdout "$IN"
+	fi
+}
+
+
+## ==== Arguments ==============================================================
+## -- System defaults ----------------------------------------------------------
+TYPE=""
+FORCE=false
+AREA="page"
+
+
+## -- From CMD line ------------------------------------------------------------
+while [ "$#" -gt "0" ] ; do
+	case "$1" in
+		"-d"|"--drawing") AREA="drawing"                     ;;
+		"-s"|"--svg")     TYPE="svg"                         ;;
+		"-p"|"--pdf")     TYPE="pdf"                         ;;
+		"-f"|"--force")   FORCE=true                         ;;
+		"-h"|"--help")    printUsage                         ;;
+		"--")             shift ;  break                     ;;
+		"-"*)             printUsage "Unknown argument '$1'" ;;
+		*)                break                              ;;
+	esac
+	
+	shift
+done
+
+
+if [ $# == 1 ] ; then
+	IN="$1"
+elif [ $# == 2 ] ; then
+	IN="$1"
+	OUT="$2"
+fi
+
+
+## Guess missing input file type
+if [ -z "$TYPE" ] ; then
+	case "$IN" in
+		*.svg) TYPE="svg" ;;
+		*.pdf) TYPE="pdf" ;;
+		*) printUsage "Please specify imput file type (--pdf/--svg)"
+	esac
+fi
+
+
+## Generate missing output file name (before rewriting IN)
+if [ -z "$OUT" ] ; then
+	if [ "$TYPE" == "svg" ] ; then
+		OUT="${IN%.svg}.pdf"
+	else
+		OUT="${IN%.pdf}-fixed.pdf"
+	fi
+fi
+
+if [ "$IN" == "-" ] ; then
+	IN="/dev/stdin"
+fi
+
+if [ "$OUT" != "-" -a "$FORCE" == "false" -a -e "$OUT" ] ; then
+	printUsage "'$OUT' Already exists. --force?"
+fi
+
+open | gs -o "$OUT" -dNoOutputFonts -sDEVICE=pdfwrite -
