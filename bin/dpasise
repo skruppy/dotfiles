@@ -7,9 +7,10 @@ import subprocess
 def sh(args, stdin = None):
 	return subprocess.check_output(args, input = stdin, stderr = subprocess.STDOUT).decode("UTF-8")[:-1]
 
+## See name and ports from pacmd list-sinks
 order = [
 	('alsa_output.pci-0000_00_1b.0.analog-stereo', 'analog-output-speaker'),
-	('alsa_output.usb-0d8c_C-Media_USB_Headphone_Set-00.analog-stereo', 'analog-output-headphones'),
+	('alsa_output.usb-C-Media_Electronics_Inc._USB_Audio_Device-00.analog-stereo', 'analog-output-speaker'),
 	('alsa_output.pci-0000_00_1b.0.analog-stereo', 'analog-output-headphones'),
 	('bluez_sink.00_11_67_10_23_A8', 'headset-output'),
 ]
