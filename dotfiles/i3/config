@@ -17,9 +17,9 @@ set $mod Mod4
 # The font above is very space-efficient, that is, it looks good, sharp and
 # clear in small sizes. However, if you need a lot of unicode glyphs or
 # right-to-left text rendering, you should instead use pango for rendering and
-# chose a FreeType font, such as:
+# chose a FFira Sans Light Mono Slashed Extra 8
 # font pango:DejaVu Sans Mono 10
-font pango: DejaVu Sans 8
+font pango:Fira Sans 9
 
 
 # Use Mouse+$mod to drag floating windows to their wanted position
