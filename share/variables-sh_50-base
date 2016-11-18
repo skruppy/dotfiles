@@ -66,7 +66,16 @@ export LS_COLORS='rs=0:di=01;36:ln=36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;'\
 
 ## gtk, STFU!
 export NO_AT_BRIDGE=1
-export KDE_IS_PRELINKED=1
+
+
+## KDE5, use gtk theme
+export DESKTOP_SESSION=gnome
+
+## Cursor theme
+export GTK2_RC_FILES="$HOME/.config/gtk-2.0/gtkrc"
+
+_JAVA_OPTIONS='-Dswing.defaultlaf=com.sun.java.swing.plaf.gtk.GTKLookAndFeel -Dawt.useSystemAAFontSettings=on'
+
 export npm_config_prefix="$HOME/.cache/node"
 export NODE_PATH="$HOME/.cache/node/lib/node_modules"
 export GOPATH="$HOME/.cache/go"
