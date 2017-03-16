@@ -1,0 +1,52 @@
+#!/bin/sh
+
+set -e
+
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@" >&2
+	fi
+	echo "Usage: $(basename "$0") N OUTPUT [INPUT ...]" >&2
+	echo "" >&2
+	echo "  joins multiple INPUT PDFs to one OUTPUT PDF and appends empty" >&2
+	echo "  pages at the end of each INPUT to make theire page count a " >&2
+	echo "  multiple of N." >&2
+	
+	test "$#" -eq 0
+	exit "$?"
+}
+
+
+if [ "$#" == "1" -a \( "$1" == "-h" -o "$1" == "--help" \) ] ; then
+	printUsage
+elif [ "$#" -lt 2 ] ; then
+	printUsage "Missing arguments"
+fi
+
+
+BLANK_PDF=$DOT_DIR/share/blank.pdf
+CEIL_PAGE_COUNT="$1"
+OUTPUT="$2"
+
+ARGS=()
+shift
+shift
+
+for f in "$@" ; do
+	if [ -e "$f" ] ; then
+		PAGE_COUNT=$(pdfinfo "$f" | grep -E "^Pages:" | cut -c 17-)
+		BLANK_PAGE_COUNT=$(( $CEIL_PAGE_COUNT - 1 - ($PAGE_COUNT - 1) % $CEIL_PAGE_COUNT ))
+		
+		echo -e "\"$f\" has $PAGE_COUNT pages, adding $BLANK_PAGE_COUNT Pages"
+		ARGS+=("$f")
+		
+		for i in $(seq $BLANK_PAGE_COUNT) ; do
+			ARGS+=("$BLANK_PDF")
+		done
+	else
+		printUsage "'$f' does not exist"
+	fi
+done
+
+eval gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile="$OUTPUT" "${ARGS[@]}"
