@@ -38,33 +38,34 @@ chown root:fullnet /sys/fs/cgroup/net_cls/fullnet/tasks
 ## Can be used for home net detection: http://www.netfilter.org/documentation/HOWTO/netfilter-extensions-HOWTO-3.html#ss3.2
 ## cgroups: http://habrahabr.ru/post/274445/
 
-##    22/TCPx: SSH
-##    67/UDP4: DHCP Server
-##    68/UDP4: DHCP Client
-## 22000/TCPx: syncthing (data)
-## 22067/TCPx: syncthing (relay)
-## 21027/UDPx: syncthing (broadcast)
-##    80/TCPx: HTTP
-##   443/TCPx: HTTPS
-##   993/TCPx: IMAPS
-##   465/TCPx: SMTPS
-##  5222/TCPx: XMPP
-##   631/TCPx: IPP
-##  9100/TCPx: HP JetDirect
-##    43/TCPx: Who is
-##    53/UDPx: DNS
-##    53/TCPx: DNS
-##   123/UDPx: NTP
-##  9418/TCPx: Native GIT
-##   873/TCPx: Rsync
-##  5353/UDPx: Avahi
-##   137/UDPx: NetBios Name Service
-##   138/UDPx: NetBios Datagram
-## 19375/UDPx: "whoisthere"
-##  3632/TCPx: DistCC
-## 64738/TCPx: Mumble control
-## 64738/UDPx: Mumble speach
-##  6600/TCPx: MPD
+##    22/TCPx: IO SSH
+##    43/TCPx:  O Who is
+##    53/TCPx:  O DNS
+##    53/UDPx:  O DNS
+##    67/UDP4:  O DHCP Server
+##    68/UDP4: I  DHCP Client
+##    80/TCPx:  O HTTP
+##   123/UDPx:  O NTP
+##   443/TCPx:  O HTTPS
+##   465/TCPx:  O SMTPS
+##   547/UDP6:  O DHCP
+##   631/TCPx:  O IPP
+##   873/TCPx:  O Rsync
+##   993/TCPx:  O IMAPS
+##  3632/TCPx: I  DistCC
+##  4242/TCPx:  O Quassel Core
+##  5060/UDPx: IO SIP
+##  5222/TCPx:  O XMPP
+##  5353/UDPx:  O Avahi
+##  6454/UDPx:  O Art-Net
+##  6600/TCPx:  O MPD
+##  9100/TCPx:    HP JetDirect
+##  9418/TCPx:  O Native GIT
+## 21027/UDPx:    syncthing (broadcast)
+## 22000/TCPx:    syncthing (data)
+## 22067/TCPx:    syncthing (relay)
+## 64738/TCPx:  O Mumble control
+## 64738/UDPx:  O Mumble speach
 ## DHCP seems to use raw sockets, which can't be filtered
 
 
@@ -93,15 +94,21 @@ ipt4 -t nat -P POSTROUTING ACCEPT
 ## == Table: filter
 iptx -F
 iptx -X
-iptx -P INPUT DROP
-iptx -P FORWARD DROP
-iptx -P OUTPUT DROP
 
-# iptx -P INPUT ACCEPT
-# iptx -P FORWARD ACCEPT
-# iptx -P OUTPUT ACCEPT
-# exit 0
+if [ "$1" == "stop" ] ; then
+	iptx -P INPUT ACCEPT
+	iptx -P FORWARD ACCEPT
+	iptx -P OUTPUT ACCEPT
+	echo "Stopped"
+	exit 0
+else
+	iptx -P INPUT DROP
+	iptx -P FORWARD DROP
+	iptx -P OUTPUT DROP
+fi
 
+
+## Create new chains
 iptx -N IN_LOG
 iptx -N OUT_LOG
 
@@ -114,10 +121,10 @@ ipt6 -A INPUT -p ipv6-icmp -j ACCEPT
 
 ## ==== Accept special ports
 ## TCP (simple)
-iptx -A INPUT -p tcp -m multiport --dports 22,22000,3632 -j ACCEPT
+iptx -A INPUT -p tcp -m multiport --dports 22,3632 -j ACCEPT
 
 ## UDP (simple)
-iptx -A INPUT -p udp -m multiport --dports 21027 -j ACCEPT
+iptx -A INPUT -p udp -m multiport --dports 5060 -j ACCEPT
 
 ## DHCP (why isn't conntrack sufficient?)
 ipt6 -A INPUT -p udp --sport 547 --dport 546 -j ACCEPT
@@ -162,10 +169,10 @@ ipt6 -A OUTPUT -p ipv6-icmp -j ACCEPT
 
 ## ==== Accept special ports
 ## TCP (simple)
-iptx -A OUTPUT -p tcp -m multiport --dports 22,80,443,993,465,5222,631,22000,22067,43,873,9418,64738,9100,6600 -j ACCEPT
+iptx -A OUTPUT -p tcp -m multiport --dports 22,43,80,443,465,631,873,993,4242,5222,6600,9418,64738 -j ACCEPT
 
 ## UDP (simple)
-iptx -A OUTPUT -p udp -m multiport --dports 123,60001:60999,64738 -j ACCEPT
+iptx -A OUTPUT -p udp -m multiport --dports 123,6454,60001:60999,64738 -j ACCEPT
 
 ## DHCP
 ipt4 -A OUTPUT -p udp --sport 68 --dport 67 -j ACCEPT
@@ -205,3 +212,6 @@ ipt6 -A OUTPUT -j REJECT
 ## === OUT_LOG
 ## Log
 iptx -A OUT_LOG -m limit --limit 10/min -j LOG --log-prefix "iptables: Reject OUT: " --log-level 7
+
+
+echo "Started"
