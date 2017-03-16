@@ -1,0 +1,83 @@
+#!/bin/bash
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@" >&2
+	fi
+	echo "Usage: $(basename "$0") [OPTIONS] [stop]" >&2
+	echo "" >&2
+	echo "  start a local accessable socks server." >&2
+	echo "" >&2
+	echo "OPTIONS" >&2
+	echo "  -p PORT  --port PORT   Default: 5555" >&2
+	echo "  -h       --help        Display this message" >&2
+	
+	test "$#" -eq 0
+	exit "$?"
+}
+
+PORT=5555
+STOP=false
+
+while [ "$#" -gt 0 ] ; do
+	case "$1" in
+		"-p"|"--port")
+			PORT=("$2")
+			shift
+			shift
+		;;
+		"-h"|"--help")
+			printUsage
+			## EXIT
+		;;
+		"stop")
+			STOP=true
+			shift
+			break
+		;;
+		"-"*)
+			printUsage "Unknown argument '$1'"
+			## EXIT
+		;;
+		*)
+			break
+		;;
+	esac
+done
+
+while [ "$#" -gt 0 ] ; do
+	printUsage "Unknown argument '$1'"
+	## EXIT
+done
+
+
+PATH="$PATH:~/.local/bin"
+
+if ! type ssserver >/dev/null 2>&1 ; then
+	 pip install --user shadowsocks || exit $?
+fi
+
+if $STOP ; then
+	ssserver -d stop --pid-file /tmp/ssserver.pid
+	sslocal  -d stop --pid-file /tmp/sslocal.pid -s 127.0.0.1
+else
+	ssserver \
+		-qq \
+		-k 'x' \
+		--fast-open \
+		-s 127.0.0.1 \
+		-d start \
+		--forbidden-ip "127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fd00::/8,fe80::/10,fc00::/7" \
+		--pid-file /tmp/ssserver.pid \
+		--log-file /tmp/ssserver.log
+	
+	sslocal \
+		-qq \
+		-k 'x' \
+		--fast-open \
+		-s 127.0.0.1 \
+		-d start \
+		-l "$PORT" \
+		--pid-file /tmp/sslocal.pid \
+		--log-file /tmp/sslocal.log
+fi
