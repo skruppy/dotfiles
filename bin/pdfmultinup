@@ -1,0 +1,68 @@
+#!/bin/sh
+
+set -e
+
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@" >&2
+	fi
+	echo "Usage: $(basename "$0") [2|8] OUTPUT [INPUT ...]" >&2
+	echo "" >&2
+	echo "  joins multiple INPUT PDFs to one OUTPUT PDF. Two or eight input" >&2
+	echo "  pages will end up on one output page. Pages from different input" >&2
+	echo "  documents will not be placed on the same output page." >&2
+	
+	test "$#" -eq 0
+	exit "$?"
+}
+
+
+if [ "$#" == "1" -a \( "$1" == "-h" -o "$1" == "--help" \) ] ; then
+	printUsage
+elif [ "$#" -lt 2 ] ; then
+	printUsage "Missing arguments"
+fi
+
+
+CEIL_PAGE_COUNT="$1"
+OUTPUT="$2"
+
+ARGS=()
+shift
+shift
+
+case "$CEIL_PAGE_COUNT" in
+	2)
+		ARGS+=("--nup" "2x1")
+	;;
+	8)
+		ARGS+=("--nup" "2x4" "--no-landscape")
+	;;
+	*)
+		printUsage "The first argument has to be 2 or 8"
+	;;
+esac
+
+ARGS+=("--trim" "1cm 1cm 1cm 1cm" "--clip" "true" "--")
+
+for f in "$@" ; do
+	if [ -e "$f" ] ; then
+		PAGE_COUNT=$(pdfinfo "$f" | grep -E "^Pages:" | cut -c 17-)
+		BLANK_PAGE_COUNT=$(( $CEIL_PAGE_COUNT - 1 - ($PAGE_COUNT - 1) % $CEIL_PAGE_COUNT ))
+		
+		echo -e "\"$f\" has $PAGE_COUNT pages, adding $BLANK_PAGE_COUNT Pages"
+		ARGS+=("$f")
+		
+		SEL="1-"
+		for i in $(seq $BLANK_PAGE_COUNT) ; do
+			SEL="$SEL,{}"
+		done
+		
+		ARGS+=("$SEL")
+	else
+		echo "$f does not exist"
+	fi
+done
+
+eval pdfnup -o "$OUTPUT" "${ARGS[@]}"
