@@ -12,6 +12,8 @@ URxvt.color12:               #6D98BF
 
 !! Font
 URxvt.font:                  xft:Droid Sans Mono Slashed Extra-7.5
+Xcursor.theme:               Adwaita
+Xcursor.size:                16
 
 
 !! Scroll
