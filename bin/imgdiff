@@ -1,0 +1,31 @@
+#!/bin/sh
+
+set -e
+
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@" >&2
+	fi
+	echo "Usage: $(basename "$0") [OPTIONS] IMG1 IMG2" >&2
+	echo "" >&2
+	echo "  Presents a visual comparison of IMG1 and IMG2." >&2
+	echo "" >&2
+	echo "OPTIONS" >&2
+	echo "  -h       --help        Display this message" >&2
+	
+	test "$#" -eq 0
+	exit "$?"
+}
+
+
+if [ "$#" == "1" -a \( "$1" == "-h" -o "$1" == "--help" \) ] ; then
+	printUsage
+elif [ "$#" -ne 2 ] ; then
+	printUsage "Pleas provide exactly two images"
+fi
+
+
+compare "$2" "$1" png:- | \
+montage -geometry +4+4 "$2" - "$1" png:- | \
+feh -
