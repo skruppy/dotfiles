@@ -1,8 +1,13 @@
 !! Colors
 URxvt.foreground:            White
 URxvt.background:            Black
-URxvt.color4:                #77beFF
-URxvt.color12:               #77beFF
+URxvt.color1:                #FF0000
+URxvt.color2:                #00FF00
+URxvt.color3:                #FFFF00
+URxvt.color4:                #A0D0FF
+URxvt.color5:                #FF00FF
+URxvt.color6:                #00FFFF
+URxvt.color12:               #6D98BF
 
 
 !! Font
