@@ -22,7 +22,7 @@ printUsage() {
 if [ "$#" == "1" -a \( "$1" == "-h" -o "$1" == "--help" \) ] ; then
 	printUsage
 elif [ "$#" -ne 2 ] ; then
-	printUsage "Pleas provide exactly two images"
+	printUsage "Please provide exactly two images"
 fi
 
 

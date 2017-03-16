@@ -1,0 +1,76 @@
+#!/bin/bash
+
+text="
+ ███  ████ ████ █    ███ █   █ █████
+█   █ █    █    █     █  ██  █ █
+█   █ ███  ███  █     █  █ █ █ ████
+█   █ █    █    █     █  █  ██ █
+ ███  █    █    ████ ███ █   █ █████
+
+ssh $@ failed (Ctrl+\\ to quit)
+"
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@" >&2
+	fi
+	echo "Usage: $(basename "$0") [OPTIONS] SSH_OPTS" >&2
+	echo "" >&2
+	echo "  Connects to a ssh server and opens a _shell_. A lost connection" >&2
+	echo "  will be indicated and tried to reconnect." >&2
+	echo "" >&2
+	echo "OPTIONS" >&2
+	echo "  -h       --help        Display this message" >&2
+	
+	test "$#" -eq 0
+	exit "$?"
+}
+
+
+renderPause() {
+	# Save screen contents and make cursor invisible
+	stty -echo -icanon time 0 min 0
+	tput smcup; tput civis
+	
+	# Calculate sizes and positions
+	terminal_cols="$(tput cols)"
+	terminal_rows="$(tput lines)"
+	banner_cols=54
+	banner_rows=7
+	start_row=$(((terminal_rows - banner_rows) / 2))
+	start_col=$(((terminal_cols - banner_cols) / 2))
+	
+	# Set the foreground and background colors and go!
+	tput setab 0
+	tput setaf 1
+	clear
+	row=$start_row
+	
+	while read -r ; do
+		tput cup $row $start_col
+		echo -n "$REPLY"
+		((++row))
+	done <<<"$text"
+}
+
+
+if [ "$#" == "1" -a \( "$1" == "-h" -o "$1" == "--help" \) ] ; then
+	printUsage
+elif [ "$#" == "0" ] ; then
+	printUsage "Missing arguments"
+fi
+
+
+trap 'exit 0' SIGQUIT
+trap 'tput sgr0; tput cnorm; tput rmcup || clear' EXIT
+trap renderPause WINCH
+
+while true ; do
+	ssh -t -o ServerAliveInterval=2 -o ServerAliveCountMax=2 "$@" 'reset;${SHELL:-sh}'
+	if [ $? -ne 255 ] ; then
+		break
+	else
+		renderPause
+		sleep 2
+	fi
+done
