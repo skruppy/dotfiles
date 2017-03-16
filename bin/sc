@@ -140,8 +140,8 @@ case "$(md5sum /proc/sys/kernel/hostname | cut -c -32)" in
 	;;
 	"9e4cce55ab33f66c3fed81d1343fe541")
 		card="card0-HDMI-A-1"
-		primOutput="eDP1"
-		secOutput="HDMI1"
+		primOutput="eDP-1"
+		secOutput="HDMI-1"
 	;;
 	*)
 		echo "No configuration for $(cat /proc/sys/kernel/hostname)" >&2
