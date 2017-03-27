@@ -1,9 +1,13 @@
 [color]
 	ui = auto
 [merge]
+	tool = kdiff3
 	defaultToUpstream = true
 [push]
 	default = simple
+[core]
+	editor = nano -t
+	excludesfile = ~/.config/git/ignore
 [diff]
 	compactionHeuristic = true
 [pull]
