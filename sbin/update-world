@@ -1,0 +1,163 @@
+#!/bin/zsh
+
+set -e
+set -o EXTENDED_GLOB
+
+
+printHeader() {
+	echo -en "\033[1m"
+	echo -n "$@"
+	echo -e "\033[0m"
+}
+
+
+getUserInput() {
+	echo -e "\033[1;31mThe last statement failed\033[0m\a" >&2
+	
+	while true ; do
+		read -k1 "answer?(a)gain / (c)ontinue with next / (q)uit? "
+		echo >&2
+		
+		case "$answer" in
+			[acq]) echo "$answer" ; return ;;
+			*)                        ;;
+		esac
+	done
+}
+
+
+run() {
+	printHeader "$@"
+	
+	while ! "$@" ; do
+		case $(getUserInput) in
+			"a")        ;;
+			"c") break  ;;
+			"q") exit 1 ;;
+		esac
+	done
+}
+
+
+runEmerge() {
+	printHeader "emerge $@"
+	
+	if ! emerge "$@" ; then
+		case $(getUserInput) in
+			"a") run emerge --resume ;;
+			"c")                     ;;
+			"q") exit 1              ;;
+		esac
+	fi
+}
+
+
+export PORTAGE_NICENESS=19
+export PORTAGE_IONICE_COMMAND="ionice -c3 -p \${PID}"
+
+perlHash="$(md5sum /usr/bin/perl)"
+pythonVersion="$(python --version)"
+
+
+## Sync portage tree (no more often than every 12 hours)
+if (( $(date -r "/var/cache/eix/portage.eix" +"%s") <= $(date -d "now - 12 hours" +"%s") )) ; then
+	run eix-sync -q
+fi
+
+## Show the news _before_ you build (and where the user reads them)
+eselect news read new
+
+## Update world
+runEmerge --ask --alert --tree --verbose-conflicts --quiet-build --accept-properties=-interactive --autounmask-continue --update --complete-graph --deep --with-bdeps=y --newuse @world
+
+#run smart-live-rebuild
+
+## Fix stuff
+## Maybe there are also new packages to instal or forgotten updates (hence --verbose-conflicts --autounmask-continue)
+world="$(mktemp)"
+printHeader "emerge --emptytree --pretend @world"
+emerge --emptytree --pretend @world | grep '^\[ebuild' >"$world" ## Don't use -q here, this hides USE=".."
+packages=$( (grep -vF '[ebuild   R   ' <"$world" ; grep -F '="' <"$world") | sed -n 's/^[^]]*\] \+\([^ ]*\).*/"=\1"/p' | grep -v "sci-electronics/systemc" | tr '\n' ' ' )
+if [ -n "$packages" ] ; then
+	eval runEmerge --ask --alert --tree --verbose-conflicts --quiet-build --autounmask-continue --oneshot $packages
+fi
+rm "$world"
+
+## Rebuild libs
+## @preserved-rebuild should ounly rebuild, which should never produce conflicts (hence no --verbose-conflicts and --autounmask-continue)
+## There should also be no big rebuilds or problems (therefore no 
+runEmerge --quiet-build @preserved-rebuild
+
+## Update local TeXLive (@todo get rid of full pathes)
+if (( $(date -r "/opt/texlive/2016/tlpkg/texlive.tlpdb" +"%s") <= $(date -d "now - 10 days" +"%s") )) ; then
+	run su -c "/opt/texlive/2016/bin/x86_64-linux/tlmgr update --self --all" "$(stat -c '%U' /opt/texlive)"
+fi
+
+## Rebuild stuff depending on perl
+if ! md5sum -c <<<"$perlHash" >/dev/null ; then
+	run perl-cleaner all
+	runEmerge --quiet-build @preserved-rebuild
+fi
+
+
+## Update/rebuild python
+run eselect python update
+
+if [ "$pythonVersion" != "$(python --version)" ] ; then
+	run python-updater
+	runEmerge --quiet-build @preserved-rebuild
+fi
+
+
+## Update kernel
+pushd /usr/src
+if [ ! -x $(ls -dvr linux-* | head -1)/vmlinux ] ; then
+	run rm linux
+	run ln -vsf $(ls -vrd linux-*         | head -1) linux
+	run cp -v   $(ls -vr  linux-*/.config | head -1) linux
+	cd linux
+	run make olddefconfig
+	run make -j8
+	run make -j8 modules_install
+	run make -j8 install
+	run touch /boot/* ## Specific to my setup
+	runEmerge --quiet-build --tree @module-rebuild
+	run eclean-kernel -n 3
+fi
+popd
+
+
+#### Cleanup
+## Remove old/unneeded packages
+run emerge --ask --depclean
+
+## Does this ever did something?
+run emaint --fix all
+
+## Remove sources (dist files) of packes not instaleld anymore
+run eclean-dist
+
+## Remove logs and upacked sources of failed builds
+## -f, so it won't fail if there are absolutely no files to delete
+## (N): nullglob, so it won't fail if there are no files to delete
+run rm -fR -- /var/tmp/portage/*(N) /var/log/portage/*~/var/log/portage/elog(N)
+
+## Update config files (and don't overwrite the terminal output)
+for i in `seq $LINES` ; do echo ; done
+run dispatch-conf
+
+## Let the user monkey clean up /etc/portage
+run eix-test-obsolete
+run portpeek -a -c
+
+while true ; do
+	read -k1 "answer?Rerun (e)ix-test-obsolete / (p)ortpeek or (q)uit? "
+	echo >&2
+	
+	case $answer in
+		"e") run eix-test-obsolete ;;
+		"p") run portpeek -a -c    ;;
+		"q") exit 0                ;;
+		*)                         ;;
+	esac
+done
