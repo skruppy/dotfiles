@@ -36,6 +36,8 @@ run() {
 			"q") exit 1 ;;
 		esac
 	done
+	
+	echo
 }
 
 
@@ -49,6 +51,8 @@ runEmerge() {
 			"q") exit 1              ;;
 		esac
 	fi
+	
+	echo
 }
 
 
@@ -61,11 +65,11 @@ pythonVersion="$(python --version)"
 
 ## Sync portage tree (no more often than every 12 hours)
 if (( $(date -r "/var/cache/eix/portage.eix" +"%s") <= $(date -d "now - 12 hours" +"%s") )) ; then
-	run eix-sync -q
+	run eix-sync
 fi
 
 ## Show the news _before_ you build (and where the user reads them)
-eselect news read new
+run eselect news read new
 
 ## Update world
 runEmerge --ask --alert --tree --verbose-conflicts --quiet-build --accept-properties=-interactive --autounmask-continue --update --complete-graph --deep --with-bdeps=y --newuse @world
@@ -142,6 +146,9 @@ run eclean-dist
 ## (N): nullglob, so it won't fail if there are no files to delete
 run rm -fR -- /var/tmp/portage/*(N) /var/log/portage/*~/var/log/portage/elog(N)
 
+## Update manual pages database (for apropos)
+run mandb
+
 ## Update config files (and don't overwrite the terminal output)
 for i in `seq $LINES` ; do echo ; done
 run dispatch-conf
@@ -151,6 +158,7 @@ run eix-test-obsolete
 run portpeek -a -c
 
 while true ; do
+	echo -e "\a" >&2
 	read -k1 "answer?Rerun (e)ix-test-obsolete / (p)ortpeek or (q)uit? "
 	echo >&2
 	
