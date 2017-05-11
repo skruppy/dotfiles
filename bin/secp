@@ -1,0 +1,207 @@
+#!/usr/bin/python3
+
+import requests
+from lxml import html
+from lxml import etree
+import re
+import datetime
+import time
+import copy
+import argparse
+import os
+import os.path
+import yaml
+import textwrap
+import operator
+
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+bot = requests.session()
+
+def aquireAssignments(group, password):
+	global bot
+	
+	r = bot.post(
+		'https://secserver.secp-int.lab.nm.ifi.lmu.de/login',
+		verify=False,
+		data={'group': 'pcsec%02d' % group, 'password': password}
+	)
+	
+	if r.status_code != 200:
+		raise Exception('Login failed')
+	
+	assignments = {}
+	tree = html.fromstring(r.text)
+	for t in tree.xpath('//table'):
+		headerEl = t.xpath('./caption/h3')
+		
+		if not t.xpath('./caption/h3'):
+			continue
+		
+		assignment = {}
+		
+		## Header
+		m = re.match('^Blatt (\d+) Deadline: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)$', headerEl[0].text)
+		assignment['nr'] = int(m.group(1))
+		assignment['due'] = datetime.datetime(
+			int(m.group(2)), int(m.group(3)), int(m.group(4)), int(m.group(5)), int(m.group(6)), int(m.group(7))
+		)
+		
+		## Test ID
+		buttonEl = t.xpath('./caption/button')[0]
+		assignment['testNr'] = re.match('.*(\d+).*', buttonEl.get('onclick')).group(1)
+		
+		## Tests
+		assignment['tests'] = {}
+		for row in t.xpath('./tbody/tr'):
+			test = {}
+			
+			m = re.match('^(\d+\w*)-(\S+)$', row[0].text)
+			test['nr'] = m.group(1)
+			test['name'] = m.group(2)
+			
+			test['description'] = row[1].text
+			
+			test['maxScore'] = float(row[2].text)
+			
+			assignment['tests'][row[0].text] = test
+		
+		assignments[assignment['nr']] = assignment
+	
+	return assignments
+
+
+def runTest(a):
+	global bot
+	
+	print('\033[30;47m  Assignment %s (due to %s)  \033[0m\n' % (a['nr'], a['due']))
+	
+	r = bot.post(
+		'https://secserver.secp-int.lab.nm.ifi.lmu.de/runsheet/%s' % a['testNr'],
+		verify=False,
+	)
+	
+	if r.status_code == 429:
+		raise Exception('Rate limit exceeded')
+	elif r.status_code != 202:
+		raise Exception('Test failed %s' % r.status_code)
+	
+	url = r.headers['location']
+	if not url.startswith('https://secserver.secp-int.lab.nm.ifi.lmu.de/status/'):
+		raise Exception('Unexpected URL')
+	
+	i = 0
+	while True:
+		time.sleep(1)
+		r = bot.get(url, verify=False)
+		if r.status_code != 200:
+			raise Exception('Test failed %s' % r.status_code)
+		status = r.json()
+		
+		results = copy.deepcopy(a['tests'])
+		if 'result' in status:
+			for result in status['result']:
+				results[result['name']]['score'] = float(result['score'])
+				results[result['name']]['msgs'] = result['msg']
+				results[result['name']]['success'] = abs(results[result['name']]['score'] - results[result['name']]['maxScore']) < 0.1
+			
+			for k in sorted(results):
+				result = results[k]
+				
+				if result['success']:
+					print('\033[1m[  \033[32m%2s\033[0m  \033[1m]\033[0m' % (result['score']), end='')
+				else:
+					print('\033[1m[\033[31m%2s\033[0m/\033[1;31m%s\033[0m\033[1m]\033[0m' % (result['score'], result['maxScore']), end='')
+				
+				print(' \033[33m%s \033[0m(%s)\033[0m' % (result['nr'], result['name']))
+				
+				print(textwrap.fill(result['description'], initial_indent='> ', subsequent_indent='> '))
+				
+				
+				for msg in sorted(result['msgs']):
+					if result['success']:
+						print('\033[1m%s\033[0m: %s' % (msg, result['msgs'][msg].strip()))
+					else:
+						print('\033[1m%s\033[0m: %s' % (msg, result['msgs'][msg].strip()))
+				
+				print('')
+			
+			return
+		
+		spinner = '|/-\\|/-\\'[i%8]
+		print('\033[A\033[J%ss/%s%%: %s' % (
+			#spinner,
+			i,
+			int(status['current'] * 100 / status['total']),
+			status['status']
+		))
+		
+		if status['state'] == 'FINISHED':
+			break
+		i += 1
+
+def actionTest(args):
+	assignments = aquireAssignments(args.group, args.password)
+	
+	if args.assignment not in assignments:
+		raise Exception('Assignment %s does not exist' % args.assignment)
+	
+	runTest(assignments[args.assignment])
+
+
+def actionList(args):
+	assignments = aquireAssignments(args.group, args.password)
+	
+	for nr in sorted(assignments, key=lambda nr: assignments[nr]['due'], reverse=True):
+		a = assignments[nr]
+		print('\033[1mAssignment %s (due to %s)\033[0m' % (a['nr'], a['due']))
+		for testNr in sorted(a['tests']):
+			t = a['tests'][testNr]
+			
+			print('  \033[33m%s\033[0m: %s (%sP)' % (t['nr'], t['name'], t['maxScore']))
+			
+			print(textwrap.fill(t['description'], initial_indent='  > ', subsequent_indent='  > '))
+			
+			print('')
+
+parser = argparse.ArgumentParser(description='Process some integers.')
+
+parser.add_argument('-g', '--group', metavar='N', type=int, help='The team number (`pcsecN`, default from config file)')
+parser.add_argument('-p', '--password', help='The groups password (default from config file)')
+parser.add_argument('-c', '--config', metavar='FILE', help='Path of the configuration file (default ~/.config/secp/config.yaml)', default=os.path.join(os.path.expanduser('~'),'.config/secp/config.yaml'))
+parser.add_argument('-b', '--basepath', metavar='URL', help='Base path of requests', default='https://secserver.secp-int.lab.nm.ifi.lmu.de/')
+
+subParsers = parser.add_subparsers(dest='action', help='Action')
+
+listParser = subParsers.add_parser('list', aliases=['l', 'ls'], help='List assignments')
+
+testParser = subParsers.add_parser('test', aliases=['t'], help='Run tests')
+testParser.add_argument('assignment', metavar='ASSIGNMENT', type=int, help='Assignment number to run tests for')
+
+args = parser.parse_args()
+
+if args.group is None or args.password is None:
+	if os.path.isfile(args.config) == False:
+		raise Exception('Could not read config file "%s" and no group or password given' % args.config)
+	else:
+		with open(args.config, 'r') as ymlfile:
+			cfg = yaml.load(ymlfile)
+		
+		if args.group is None and 'group' in cfg:
+			args.group = cfg['group']
+		
+		if args.password is None and 'password' in cfg:
+			args.password = cfg['password']
+
+if args.group is None:
+	raise Exception('No team number specified')
+
+if args.password is None:
+	raise Exception('No password specified')
+
+if args.action in ['test', 't']:
+	actionTest(args)
+elif args.action in ['list', 'ls', 'l']:
+	actionList(args)
