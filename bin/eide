@@ -1,0 +1,221 @@
+#!/bin/bash
+
+set -euo pipefail
+D="${DOT_EIDE_HOME:-${HOME}/opt/$(basename "$0")}"
+
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$@"
+	fi
+	
+	echo "Usage: $(basename "$0") [OPTIONS] [--] APPLICATION [ECLIPSE_OPTIONS ...]"
+	echo ""
+	echo "  Starts Eclipse IDE with a dedicated set of plugins (to save RAM). If Eclipse"
+	echo "  or the plugins are not jet installed, $(basename "$0") will automatically"
+	echo "  download and install the newes version into ${D}."
+	echo ""
+	echo "OPTIONS"
+	echo "  -q --quiet          Hide $(basename "$0"), but not Eclipse, output"
+	echo "  -v --verbose        Show Eclipse stdout (hidden by default)"
+	echo "  -vv                 Mirror the Eclipse error log to the console"
+	echo "  -l --list           List available applications"
+	echo "  -p --perspectives   List available perspective IDs of installed applications"
+	echo "                      (not very accurate)"
+	echo "  -h --help           Display this message"
+}
+
+
+log() {
+	if $logging ; then
+		echo "$@"
+	fi
+}
+
+
+download() {
+	local OUT="$1"
+	local URL="$2"
+	
+	if [ ! -f "${OUT}" ] ; then
+		log "Downloading ${URL} -> ${OUT}"
+		curl -sfL -o "${OUT}" "${URL}"
+	else
+		log "Skipping ${URL}, ${OUT} already exists"
+	fi
+}
+
+
+installPlatform() {
+	if [ -d eclipse -a ! -f platform.tar.gz ] ; then
+		return 0
+	fi
+	
+	## Stage 1: Find subdirectory
+	download stage1.html "http://download.eclipse.org/eclipse/downloads/"
+	SUB_D="$(grep -oE '<a.*title="Latest Release".*>' stage1.html | sed 's/.*href="\([^"]*\)".*/\1/')"
+	
+	## Stage 2: Find file
+	download stage2.html "http://download.eclipse.org/eclipse/downloads/${SUB_D}"
+	FILE="$(grep -oE 'dropFile=eclipse-platform-[^"]*-linux-gtk-x86_64.tar.gz' stage2.html | sed 's/[^=]*=\(.*\)/\1/')"
+	grep -oE 'http://download.eclipse.org/eclipse/updates/[^/"]*' stage2.html | head -n1 >repository
+	
+	## Stage 3: Get Tarball
+	download platform.tar.gz "http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/${SUB_D}${FILE}&r=1" ## r=1: direct download
+	tar -xf platform.tar.gz
+	test -d eclipse ## Ensure our final condition, also checkt at the beginning, is met
+	
+	## Cleanup
+	rm stage1.html stage2.html platform.tar.gz
+}
+
+
+gag() {
+	if eval "$2" ; then
+		cat - >&$1
+	else
+		cat - >/dev/null
+	fi
+}
+
+
+p2install() {
+	local repos="${1},http$(grep -oE '://download.eclipse.org/releases.*' eclipse/p2/org.eclipse.equinox.p2.engine/profileRegistry/SDKProfile.profile/.data/.settings/org.eclipse.equinox.p2.metadata.repository.prefs)"
+	local perspective="${2}"
+	local ius="${3}"
+	
+	log "Installing app"
+	
+	## See https://help.eclipse.org/kepler/index.jsp?topic=/org.eclipse.platform.doc.isv/guide/p2_director.html
+	eclipse/eclipse \
+		-nosplash                                         \
+		-configuration  "${app_dir}/configuration"        \
+		-application    "org.eclipse.equinox.p2.director" \
+		-repository     "${repos}"                        \
+		-installIUs     "${ius}"                          \
+		${eclipseExtra} \
+		> >(gag 1 "${eclipseOutput} || ${logging}") 2> >(gag 2 "${eclipseOutput}")
+	
+	eclipseExtra="-perspective ${perspective}"
+}
+
+
+config_d() {
+	p2install "http://ddt-ide.github.io/releases/" "org.dsource.ddt.ide.ui.DeePerspective" "
+		org.dsource.ddt.feature.group,
+	"
+}
+
+
+config_ldap() {
+	p2install "http://directory.apache.org/studio/update/" "org.apache.directory.studio.ldapbrowser.ui.perspective.BrowserPerspective" "
+		org.apache.directory.studio.apacheds.feature.feature.group,
+		org.apache.directory.studio.ldapbrowser.feature.feature.group,
+		org.apache.directory.studio.ldifeditor.feature.feature.group,
+		org.apache.directory.studio.schemaeditor.feature.feature.group,
+		org.apache.directory.studio.slf4j-eclipselog
+	"
+}
+
+
+config_db() {
+	p2install "http://dbeaver.jkiss.org/update/latest/" "org.jkiss.dbeaver.core.perspective" "
+		org.jkiss.dbeaver.core.feature.feature.group,
+		org.jkiss.dbeaver.ext.mysql.feature.feature.group,
+		org.jkiss.dbeaver.runtime.feature.feature.group,
+		org.jkiss.dbeaver.debug.feature.feature.group
+	"
+}
+
+
+list() {
+	local prefix="declare -f config_"
+	declare -F | grep -E "^${prefix}" | cut -c "$(( 1 + ${#prefix} ))-"
+}
+
+
+listPerspectives() {
+	echo "This is not an accurate output!"
+	cd "${D}/apps"
+	
+	for app in * ; do
+		echo -e "\n#### ${app} app"
+		
+		for jar in $(find "${app}/plugins" -name '*.jar') ; do
+			unzip -q -c "$jar" 'plugin.xml' 2>/dev/null | \
+			sed -n 's/.*<perspectiveExtension.*targetID="\([^>]*\)".*>.*/\1/p' || true
+		done
+	done
+}
+
+
+eclipseOutput=false
+logging=true
+eclipseExtra=
+while [ "$#" -gt "0" ] ; do
+	case "$1" in
+		"-q"|"--quiet")
+			logging=false
+		;;
+		"-v"|"--verbose")
+			eclipseOutput=true
+		;;
+		"-vv")
+			eclipseOutput=true
+			eclipseExtra="${eclipseExtra} -consolelog"
+		;;
+		"-l"|"--list")
+			list
+			exit
+		;;
+		"-p"|"--perspectives")
+			listPerspectives
+			exit
+		;;
+		"-h"|"--help")
+			printUsage
+			exit
+		;;
+		"--")
+			shift
+			break
+		;;
+		"-"*)
+			printUsage "Unknown argument '$1'" >&2
+			exit 1
+		;;
+		*)
+			break
+		;;
+	esac
+	
+	shift
+done
+
+if [ "$#" -lt "1" ] ; then
+	printUsage "Please specify an application" >&2
+	exit 1
+fi
+
+app="${1}" ; shift
+if ! list | grep -xq "${app}" ; then
+	echo "'${app}' is not a valid application. But those are:" >&2
+	list >&2
+	exit 1
+fi
+
+
+mkdir -p "${D}"
+D="$(realpath "${D}")"
+cd "${D}"
+
+installPlatform
+
+app_dir="${D}/apps/${app}"
+if [ ! -f "${app_dir}/installed" ] ; then
+	config_${app}
+	touch "${app_dir}/installed"
+fi
+
+## See http://help.eclipse.org/kepler/index.jsp?topic=%2Forg.eclipse.platform.doc.user%2Ftasks%2Frunning_eclipse.htm
+exec eclipse/eclipse  -nosplash  -configuration "${app_dir}/configuration"  ${eclipseExtra}  "${@}" 2> >(gag 2 "${eclipseOutput}")
