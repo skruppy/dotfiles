@@ -1,28 +1,30 @@
 #!/bin/bash
 
 set -euo pipefail
-D="${DOT_EIDE_HOME:-${HOME}/opt/$(basename "$0")}"
 
 
-printUsage() {
+print_usage() {
 	if [ "$#" -ne 0 ] ; then
 		echo "$@"
 	fi
 	
-	echo "Usage: $(basename "$0") [OPTIONS] [--] APPLICATION [ECLIPSE_OPTIONS ...]"
+	echo "Usage: eide [OPTIONS] [--] APPLICATION [ECLIPSE_OPTIONS ...]"
 	echo ""
 	echo "  Starts Eclipse IDE with a dedicated set of plugins (to save RAM). If Eclipse"
-	echo "  or the plugins are not jet installed, $(basename "$0") will automatically"
-	echo "  download and install the newes version into ${D}."
+	echo "  or the plugins are not jet installed, eide will automatically"
+	echo "  download and install the newes version into ${EIDE_HOME}."
 	echo ""
 	echo "OPTIONS"
-	echo "  -q --quiet          Hide $(basename "$0"), but not Eclipse, output"
+	echo "  -q --quiet          Hide eide, but not Eclipse, output"
 	echo "  -v --verbose        Show Eclipse stdout (hidden by default)"
 	echo "  -vv                 Mirror the Eclipse error log to the console"
-	echo "  -l --list           List available applications"
+	echo "  -l --list           List available applications and exit"
 	echo "  -p --perspectives   List available perspective IDs of installed applications"
-	echo "                      (not very accurate)"
+	echo "                      and exit (not very accurate)"
 	echo "  -h --help           Display this message"
+	
+	test "$#" -eq 0
+	exit
 }
 
 
@@ -46,7 +48,7 @@ download() {
 }
 
 
-installPlatform() {
+install_platform() {
 	if [ -d eclipse -a ! -f platform.tar.gz ] ; then
 		return 0
 	fi
@@ -58,12 +60,18 @@ installPlatform() {
 	## Stage 2: Find file
 	download stage2.html "http://download.eclipse.org/eclipse/downloads/${SUB_D}"
 	FILE="$(grep -oE 'dropFile=eclipse-platform-[^"]*-linux-gtk-x86_64.tar.gz' stage2.html | sed 's/[^=]*=\(.*\)/\1/')"
-	grep -oE 'http://download.eclipse.org/eclipse/updates/[^/"]*' stage2.html | head -n1 >repository
 	
 	## Stage 3: Get Tarball
 	download platform.tar.gz "http://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/${SUB_D}${FILE}&r=1" ## r=1: direct download
 	tar -xf platform.tar.gz
 	test -d eclipse ## Ensure our final condition, also checkt at the beginning, is met
+	
+	## Remove Welcome screen
+	eclipse/eclipse \
+		-nosplash \
+		-application "org.eclipse.equinox.p2.director" \
+		-uninstallIU "org.eclipse.ui.intro.quicklinks,org.eclipse.ui.intro.universal" \
+		> >(gag 1 "${eclipseOutput} || ${logging}") 2> >(gag 2 "${eclipseOutput}")
 	
 	## Cleanup
 	rm stage1.html stage2.html platform.tar.gz
@@ -87,16 +95,28 @@ p2install() {
 	log "Installing app"
 	
 	## See https://help.eclipse.org/kepler/index.jsp?topic=/org.eclipse.platform.doc.isv/guide/p2_director.html
+	## Here, org.eclipse.update.install.features is not implementet but needed?
+	## See https://wiki.eclipse.org/Equinox/p2/FAQ#Why_aren.27t_bundles_being_removed_when_their_associated_feature_has_been_removed.3F
 	eclipse/eclipse \
 		-nosplash                                         \
 		-configuration  "${app_dir}/configuration"        \
 		-application    "org.eclipse.equinox.p2.director" \
 		-repository     "${repos}"                        \
 		-installIUs     "${ius}"                          \
-		${eclipseExtra} \
+		-profileProperties org.eclipse.update.install.features=true \
+		"${eclipseExtra[@]}"                              \
 		> >(gag 1 "${eclipseOutput} || ${logging}") 2> >(gag 2 "${eclipseOutput}")
 	
-	eclipseExtra="-perspective ${perspective}"
+	## Add our default workspace to the Eclise list of default workspaces
+	## (-data does not do this). Eclipse will create the workspace directories.
+	## Versioning, see https://dzone.com/articles/eclipse-workspace-tips
+	local eclise_version="$(sed -n 's/version=\(.*\)/\1/p' eclipse/.eclipseproduct)"
+	mkdir "apps/${app}/configuration/.settings"
+	echo "RECENT_WORKSPACES=${EIDE_WORKSPACES}/default_${eclise_version}_${app}" >"apps/${app}/configuration/.settings/org.eclipse.ui.ide.prefs"
+	echo "RECENT_WORKSPACES_PROTOCOL=3"                                         >>"apps/${app}/configuration/.settings/org.eclipse.ui.ide.prefs"
+	
+	## Open app default perspective
+	eclipseExtra+=("-perspective" "${perspective}")
 }
 
 
@@ -134,9 +154,9 @@ list() {
 }
 
 
-listPerspectives() {
+list_perspectives() {
 	echo "This is not an accurate output!"
-	cd "${D}/apps"
+	cd "${EIDE_HOME}/apps"
 	
 	for app in * ; do
 		echo -e "\n#### ${app} app"
@@ -149,9 +169,29 @@ listPerspectives() {
 }
 
 
+is_absolute_path() {
+	case "${!1}" in
+		/*)
+			return 0
+		;;
+		*)
+			echo "Environment variable '${1}=${!1}' is not an absolute path." >&2
+			exit 1
+		;;
+	esac
+}
+
+
+## Read configuration from nvironment variables.
+EIDE_HOME="${EIDE_HOME:-${HOME}/opt/eide}"
+is_absolute_path EIDE_HOME
+EIDE_WORKSPACES="${EIDE_WORKSPACES:-${EIDE_HOME}/workspaces}"
+is_absolute_path EIDE_WORKSPACES
+
+## Read command line switches
 eclipseOutput=false
 logging=true
-eclipseExtra=
+declare -a eclipseExtra
 while [ "$#" -gt "0" ] ; do
 	case "$1" in
 		"-q"|"--quiet")
@@ -162,27 +202,27 @@ while [ "$#" -gt "0" ] ; do
 		;;
 		"-vv")
 			eclipseOutput=true
-			eclipseExtra="${eclipseExtra} -consolelog"
+			eclipseExtra+=("-consolelog")
 		;;
 		"-l"|"--list")
 			list
 			exit
 		;;
 		"-p"|"--perspectives")
-			listPerspectives
+			list_perspectives
 			exit
 		;;
 		"-h"|"--help")
-			printUsage
-			exit
+			print_usage
+			## EXIT
 		;;
 		"--")
 			shift
 			break
 		;;
 		"-"*)
-			printUsage "Unknown argument '$1'" >&2
-			exit 1
+			print_usage "Unknown argument '$1'" >&2
+			## EXIT
 		;;
 		*)
 			break
@@ -192,9 +232,10 @@ while [ "$#" -gt "0" ] ; do
 	shift
 done
 
+## Read app from command line arguments
 if [ "$#" -lt "1" ] ; then
-	printUsage "Please specify an application" >&2
-	exit 1
+	print_usage "Please specify an application" >&2
+	## EXIT
 fi
 
 app="${1}" ; shift
@@ -205,17 +246,19 @@ if ! list | grep -xq "${app}" ; then
 fi
 
 
-mkdir -p "${D}"
-D="$(realpath "${D}")"
-cd "${D}"
+mkdir -p "${EIDE_HOME}"
+D="$(realpath "${EIDE_HOME}")"
+cd "${EIDE_HOME}"
 
-installPlatform
+## Assure Eclipse platform is installed
+install_platform
 
-app_dir="${D}/apps/${app}"
+## Assure app is installed
+app_dir="${EIDE_HOME}/apps/${app}"
 if [ ! -f "${app_dir}/installed" ] ; then
 	config_${app}
-	touch "${app_dir}/installed"
+	echo "This file indicates, that eide has successfully completed the installation of this Eclipse app. Please do not remove." >"${app_dir}/installed"
 fi
 
 ## See http://help.eclipse.org/kepler/index.jsp?topic=%2Forg.eclipse.platform.doc.user%2Ftasks%2Frunning_eclipse.htm
-exec eclipse/eclipse  -nosplash  -configuration "${app_dir}/configuration"  ${eclipseExtra}  "${@}" 2> >(gag 2 "${eclipseOutput}")
+exec eclipse/eclipse  -nosplash  -configuration "${app_dir}/configuration"  "${eclipseExtra[@]}"  "${@}" 2> >(gag 2 "${eclipseOutput}")
