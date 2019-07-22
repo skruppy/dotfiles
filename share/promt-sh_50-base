@@ -16,7 +16,7 @@ commpilePromt() {
 	if [ "${1}" = "0" -o "${pRemainingSpace}" -ge "0" ]
 	then
 		# If we have enough space left, fill it and return successfully
-		pFill="$(perl -e "print('─'x${pRemainingSpace});")"
+		pFill="$(printf '─%.0s' {1..${pRemainingSpace}})"
 		
 		# Define the "normal" promt
 		PS1="${pNotice}${pLeftPart}${pFill}${pRightPart}
