@@ -1,0 +1,19 @@
+#!/bin/bash
+declare -A layouts
+layouts["1 us"]="-layout us_de"
+layouts["2 de"]="-layout de"
+layouts["3 neo"]="-layout de -variant neo"
+
+layout=$(
+	printf '%s\n' "${!layouts[@]}" | tac | \
+	dmenu \
+		-i \
+		-l 10 \
+		-p "Change power state" \
+		-nb "#ccc" \
+		-nf "#000" \
+		-sb "#f55" \
+		-sf "#fff"
+)
+
+setxkbmap ${layouts[$layout]}

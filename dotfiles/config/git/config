@@ -15,5 +15,11 @@
 [alias]
 	uncommit = reset --soft HEAD^
 	lg = log --all --graph --decorate=short  --format=format:' %x09%C(auto,normal)%h%C(reset) @ %C(auto,normal)%ad%C(reset) (commited %cr) %C(auto)%d%C(reset)%n %x09%C(auto,bold green)%s%C(reset)  %C(auto,blue)%an <%ae>%C(reset)%n'
+	lf = log --graph  --simplify-by-decoration  --format=format:'%x09%C(auto,normal)%h%C(reset) @ %C(auto,normal)%ad%C(reset) (commited %cr) -- %an <%ae>%C(reset)%C(auto)%d%C(reset)%n%x09%C(auto,bold yellow)%s%C(reset)%n'
 [log]
 	date = format:%Y-%m-%d %H:%M:%S
+[status]
+	submoduleSummary = true
+[rebase]
+	autoStash = true
+	autoSquash = true

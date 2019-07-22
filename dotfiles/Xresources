@@ -27,6 +27,8 @@ URxvt.scrollTtyOutput:       false
 URxvt.scrollTtyKeypress:     true
 URxvt.scrollWithBuffer:      true
 
+URxvt.secondaryWheel:        true
+
 
 !! Icon
 URxvt.iconFile:              /usr/share/icons/oxygen/16x16/apps/utilities-terminal.png
@@ -65,5 +67,3 @@ URxvt.iso14755_52:           false
 !! Emacs
 URxvt.keysym.C-BackSpace:    \033[33~
 URxvt.keysym.C-S-BackSpace:  \033[27;6;15~
-
-

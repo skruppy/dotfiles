@@ -1,0 +1,9 @@
+set morespace
+set fill 1048576
+set constantshow
+set nonewlines
+set softwrap
+set tabsize 4
+set autoindent
+
+include "~/.config/nano/styles/*.nanorc"

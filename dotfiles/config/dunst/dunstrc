@@ -1,6 +1,7 @@
 # https://raw.githubusercontent.com/knopwob/dunst/master/dunstrc
 
 [global]
+max_icon_size = 64
 font = DejaVu Sans 8
 
 # Allow a small subset of html markup:

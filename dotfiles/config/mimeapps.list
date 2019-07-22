@@ -1,0 +1,4 @@
+[Default Applications]
+x-scheme-handler/http=waterfox.desktop
+x-scheme-handler/https=waterfox.desktop
+x-scheme-handler/mailto=thunderbird.desktop

@@ -98,12 +98,18 @@ ${pLineC}"
 
 
 prepareGit() {
-	if [ -f "/usr/share/git/completion/git-prompt.sh" ] ; then
-		source "/usr/share/git/completion/git-prompt.sh"
-		GIT_PS1_SHOWDIRTYSTATE=yep
-		GIT_PS1_SHOWSTASHSTATE=yep
-		GIT_PS1_SHOWUNTRACKEDFILES=yep
-	fi
+	for f in \
+		"/usr/share/git/git-prompt.sh" \
+		"/usr/lib/git-core/git-sh-prompt"
+	do
+		if [ -f "$f" ] ; then
+			source "$f"
+			GIT_PS1_SHOWDIRTYSTATE=yep
+			GIT_PS1_SHOWSTASHSTATE=yep
+			GIT_PS1_SHOWUNTRACKEDFILES=yep
+			break
+		fi
+	done
 	
 	gitCompleteFile="/usr/share/git/completion/git-completion.$S_ACT_SHELL"
 	test -f "$gitCompleteFile"

@@ -38,6 +38,7 @@ case "$S_ACT_SHELL" in
 		if [ -f /etc/zsh/zlogin ] && [[ -o login ]] ; then . /etc/zsh/zlogin ; fi
 		
 		setopt NO_RCS
+		setopt interactivecomments
 		;;
 	*)
 		S_LOGIN="y"
@@ -72,6 +73,10 @@ if [ -z "$DOT_DIR" ] ; then
 			umask 0022
 			;;
 	esac
+	
+	if [ $(tty) = "/dev/ttyS0" ] ; then
+		resize
+	fi
 fi
 
 
@@ -83,11 +88,23 @@ do
 	. "$f"
 done
 
+for f in \
+	"/etc/profile.d/vte.sh" \
+	"/etc/profile.d/vte-"*".sh"
+do
+	if [ -f "$f" ] ; then
+		. "$f"
+		break
+	fi
+done
+
 ## Allow Ctrl + S for vim
 stty -ixon
 
 case "$S_ACT_SHELL" in
 	"bash")
+		eval "$(direnv hook bash)"
+		
 		# check the window size after each command and, if necessary,
 		# update the values of LINES and COLUMNS.
 		shopt -s checkwinsize
@@ -98,45 +115,49 @@ case "$S_ACT_SHELL" in
 		;;
 	
 	"zsh")
+		eval "$(direnv hook zsh)"
+		
 		## khome = Home   kcuu1 = Up      kpp = Page Up
 		## kend  = End    kcud1 = Down    knp = Page Down
 		## kich1 = Ins    kcub1 = Left
 		## kdch1 = Del    kcuf1 = Right
 		
-		# setup key accordingly
-		test -n "${terminfo[khome]}" && bindkey "${terminfo[khome]}"   beginning-of-line
-		test -n "${terminfo[kend]}"  && bindkey "${terminfo[kend]}"    end-of-line
-		test -n "${terminfo[kich1]}" && bindkey "${terminfo[kich1]}"   overwrite-mode
-		test -n "${terminfo[kdch1]}" && bindkey "${terminfo[kdch1]}"   delete-char
-		test -n "${terminfo[kcub1]}" && bindkey "${terminfo[kcub1]}"   backward-char
-		test -n "${terminfo[kcuf1]}" && bindkey "${terminfo[kcuf1]}"   forward-char
-		test -n "${terminfo[kpp]}"   && bindkey "${terminfo[kpp]}"     beginning-of-buffer-or-history
-		test -n "${terminfo[knp]}"   && bindkey "${terminfo[knp]}"     end-of-buffer-or-history
-		test -n "${terminfo[kcuf1]}" && bindkey "\e${terminfo[kcuf1]}" forward-word
-		test -n "${terminfo[kcub1]}" && bindkey "\e${terminfo[kcub1]}" backward-word
-		test -n "${terminfo[kcuu1]}" && bindkey "${terminfo[kcuu1]}"   up_line_or_local_history
-		test -n "${terminfo[kcud1]}" && bindkey "${terminfo[kcud1]}"   down_line_or_local_history
-		                                bindkey "^[Oa"  up-line-or-history
-		                                bindkey "^[Ob"  down-line-or-history
+		## setup key accordingly
+		## https://github.com/robbyrussell/oh-my-zsh/blob/master/lib/key-bindings.zsh
+		test -n "${terminfo[khome]}" && bindkey "${terminfo[khome]}"   beginning-of-line                     ## [Home] - Go to start of line
+		test -n "${terminfo[kend]}"  && bindkey "${terminfo[kend]}"    end-of-line                           ## [End] - Go to end of line
+		test -n "${terminfo[kich1]}" && bindkey "${terminfo[kich1]}"   overwrite-mode                        ## [Ins] - Insert/Overwrite mode
+		test -n "${terminfo[kdch1]}" && bindkey "${terminfo[kdch1]}"   delete-char                           ## [Del] - Delete current character
+		test -n "${terminfo[kcub1]}" && bindkey "${terminfo[kcub1]}"   backward-char                         ## [←] - Go to previous character
+		test -n "${terminfo[kcuf1]}" && bindkey "${terminfo[kcuf1]}"   forward-char                          ## [→] - Go to next character
+		test -n "${terminfo[kpp]}"   && bindkey "${terminfo[kpp]}"     beginning-of-buffer-or-history        ## [Pg Up] - 
+		test -n "${terminfo[knp]}"   && bindkey "${terminfo[knp]}"     end-of-buffer-or-history              ## [Pg Dn] - 
+		                                bindkey "^[[1;5C"              forward-word                          ## [Ctrl + →] - move forward one word
+		                                bindkey "^[[1;5D"              backward-word                         ## [Ctrl + ←] - move backward one word
+		test -n "${terminfo[kcuu1]}" && bindkey "${terminfo[kcuu1]}"   up_line_or_local_history              ## [↑] - 
+		test -n "${terminfo[kcud1]}" && bindkey "${terminfo[kcud1]}"   down_line_or_local_history            ## [↓] - 
+		                                bindkey "^[[1;5A"              up-line-or-history                    ## [Ctrl + ↑] - 
+		                                bindkey "^[[1;5B"              down-line-or-history                  ## [Ctrl + ↓] - 
+		                                bindkey "^X^H"                 run-help                              ## [ESC + h] - Manpage for current command (zsh: alias run-help man)
+		                                bindkey "^[m"                  copy-prev-shell-word                  ## [Alt + m] - Copy previous word (usefull for mv/cp)
+		test -n "${terminfo[kcbt]}"  && bindkey "${terminfo[kcbt]}"    reverse-menu-complete                 ## [Shift + Tab] - move through the completion menu backwards
 		
-		## Open man page for current command
-		#bindkey "^X^H" run-help
 		
 		
-		# Finally, make sure the terminal is in application mode, when zle is
-		# active. Only then are the values from $terminfo valid.
-		if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} ))
-		then
-			zle_line_init() {
-				printf '%s' "${terminfo[smkx]}"
+		## Finally, make sure the terminal is in application mode, when zle is
+		## active. Only then are the values from $terminfo valid.
+		## /!\ Don't rename functions (http://zsh.sourceforge.net/Doc/Release/Zsh-Line-Editor.html)
+		if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )) ; then
+			zle-line-init() {
+				echo -n "${terminfo[smkx]}"
 			}
 			
-			zle_line_finish() {
-				printf '%s' "${terminfo[rmkx]}"
+			zle-line-finish() {
+				echo -n "${terminfo[rmkx]}"
 			}
 			
-			zle -N zle_line_init
-			zle -N zle_line_finish
+			zle -N zle-line-init
+			zle -N zle-line-finish
 		fi
 		
 		
@@ -191,7 +212,7 @@ then
 		
 		if \
 			! [ "$DBUS_SESSION_BUS_PID" -gt 0 ] 2>&1 || \
-			! [ "$(basename "$(readlink "/proc/$DBUS_SESSION_BUS_PID/exe")")" == "dbus-daemon" ]
+			! [ "$(basename "$(readlink "/proc/$DBUS_SESSION_BUS_PID/exe")")" = "dbus-daemon" ]
 		then
 			dbus-launch >"$HOME/.dbus-info"
 			source "$HOME/.dbus-info"

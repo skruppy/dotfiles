@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Terminal
+Comment=An available terminal emulator
+Type=Application
+Exec=i3-sensible-terminal

@@ -8,8 +8,8 @@ general {
 
 order += "disk /"
 order += "ipv6"
-order += "ethernet eth0"
-order += "wireless wlan0"
+order += "ethernet enp1s0"
+order += "wireless wlp2s0"
 order += "battery 1"
 order += "cpu_usage"
 order += "load"
@@ -19,12 +19,12 @@ disk "/" {
 	format = "%free"
 }
 
-ethernet eth0 {
+ethernet enp1s0 {
 	format_up   = "%ip"
-	format_down = "eth0 down"
+	format_down = "Eth down"
 }
 
-wireless wlan0 {
+wireless wlp2s0 {
 	format_up   = "%ip / %essid"
 	format_down = "WiFi down"
 }

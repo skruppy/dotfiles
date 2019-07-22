@@ -7,3 +7,6 @@
 [submodule "share/pulsemixer"]
 	path = share/pulsemixer
 	url = https://github.com/GeorgeFilipkin/pulsemixer.git
+[submodule "dotfiles/config/nano/styles"]
+	path = dotfiles/config/nano/styles
+	url = https://github.com/scopatz/nanorc.git

@@ -35,6 +35,7 @@ case "$1" in
 		exec i3lock \
 			--pointer=win \
 			--tiling \
+			--show-failed-attempts \
 			--image="$(ls /usr/local/share/lockscreens/* | sort -R | head -1)"
 		;;
 	*)

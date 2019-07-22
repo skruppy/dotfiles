@@ -1,0 +1,37 @@
+#!/bin/bash
+
+for term in \
+	"$TERMINAL" \
+	x-terminal-emulator \
+	urxvt \
+	rxvt \
+	termit \
+	terminator \
+	Eterm \
+	aterm \
+	uxterm \
+	xterm \
+	gnome-terminal \
+	roxterm \
+	xfce4-terminal \
+	termite \
+	lxterminal \
+	mate-terminal \
+	terminology \
+	st \
+	qterminal \
+	lilyterm \
+	tilix \
+	terminix \
+	konsole \
+	kitty \
+	guake \
+	tilda
+do
+	if type -t "$term" >/dev/null ; then
+		exec "$term" "$@"
+	fi
+done
+
+echo "i3-sensible-terminal: No terminal found" >&2
+exit 1

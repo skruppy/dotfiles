@@ -1,1 +1,24 @@
+## Only add repository agnostic files, special to you (e.g. editor swap files)
+## to this ~/.config/git/ignore!  If you want to ignore files relevant for
+## every user of a repository add them to a .gitignore in the repository.  For
+## files special to you and a repository, add them to $REPO/.git/info/exclude.
+
+## Kate
 *.kate-swp
+
+## Eclipse
+/.project/
+
+## Jetbrains IntelliJ IDEA
+/.idea/
+/*.iml
+
+## KBibTeX
+*~
+*~2
+*~3
+*~4
+*~5
+
+## Backup marker
+CACHEDIR.TAG

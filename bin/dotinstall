@@ -5,37 +5,23 @@ set -e
 
 
 newPreparation() {
-	local SRC="$1"
-	local DST="$2"
-	
-	shift
-	shift
+	local SRC="$1" ; shift
+	local DST="$1" ; shift
 	
 	## Stop here, if the destination file is on the no-fly list.
-	if grep \
-		--fixed-strings --line-regexp \
-		"$DST" \
-		"$HOME/.dot/not" \
-		>/dev/null 2>&1
-	then
+	if grep -F --line-regexp "$DST" "$HOME/.dot/not" >/dev/null 2>&1 ; then
 		return
 	fi
 	
-	
-	## Make a backup of the destination file, if it already exists
-	if [ -e "$HOME/$DST" ] ; then
-		mkdir -p "$(dirname "$BAK/${DST:1}")"
-		ln "$HOME/$DST" "$BAK/${DST:1}"
-	fi
-	
-	## Create the directory for the destination file
-	mkdir -p "$(dirname "$HOME/$DST")"
-	
 	## Execute the passed command if the source and destination files differ
 	## (so the backup hard links make sense)
-	if ! cmp -s "$SRC" "$HOME/$DST" ; then
+	if ! [[ "$SRC" -ef "$HOME/$DST" ]]; then
 		if [ -e "$HOME/$DST" ] ; then
-			rm "$HOME/$DST"
+			mkdir -p "$(dirname "$BAK/${DST:1}")"
+			cp -lr "$HOME/$DST" "$BAK/${DST:1}"
+			rm -r "$HOME/$DST"
+		else
+			mkdir -p "$(dirname "$HOME/$DST")"
 		fi
 		
 		"$@" "$SRC" "$HOME/$DST"
@@ -53,7 +39,6 @@ newLink() {
 }
 
 
-
 setGitCfg() {
 	if ! git config --global "$1" >/dev/null ; then
 		git config --global "$1" "$2"
@@ -67,8 +52,7 @@ cd "$(dirname "$0")/.."
 mkdir -p "$HOME/.dot"
 echo "$(pwd)" >"$HOME/.dot/dir"
 
-DOT_FAKE_DASH=i . share/console_setup
-
+DOT_FAKE_DASH=i source share/console_setup
 
 ## Create backups
 BAK="$HOME/.dot/backup/$(date "+%F_%T")"
@@ -79,51 +63,26 @@ if [ -d "$HOME/.dot/backup" ] ; then
 	cd "$DOT_DIR"
 fi
 
-
 case "$S_DOMAIN" in
 	"cip.ifi.lmu.de")
 		rbg_fix="_local"
 		;;
 esac
 
-
-## Create directories
+## "Copy" dotfiles
 find dotfiles -type f -o -type l | while read SRC ; do
 	DST=".${SRC:9}"
-	sed -e "s#--DOT_DIR--#$DOT_DIR#g" <"$SRC" >"$HOME/.dot/tmp"
-	chmod --reference "$SRC" "$HOME/.dot/tmp"
-	newCopy "$HOME/.dot/tmp" "$DST"
-done
-
-rm "$HOME/.dot/tmp"
-
-
-for f in \
-	thunderbird \
-	gajim \
-	keepass-keepass
-do
-	SRC="/usr/share/applications/$f.desktop"
-	DST=".config/autostart/$f.desktop"
-	
-	if [ -e "$SRC" ] ; then
-		newLink "$SRC" "$DST"
-	fi
+	newLink "$DOT_DIR/$SRC" "$DST"
 done
 
 
-## ==== Setup programms ========================================================
-## -- Console ------------------------------------------------------------------
+## ==== Setup programms =======================================================
+## -- Console -----------------------------------------------------------------
 newLink "$DOT_DIR/share/console_setup" ".profile"         ## interactive & login
 newLink "$DOT_DIR/share/console_setup" ".bashrc$rbg_fix"  ## interactive & not login
 newLink "$DOT_DIR/share/console_setup" ".zshenv"          ## allways
 
-
-## -- nano ---------------------------------------------------------------------
-nanorc update
-
-
-## -- git ----------------------------------------------------------------------
+## -- git ---------------------------------------------------------------------
 if type git >/dev/null 2>&1 ; then
 	echo git config --global user.name "..."
 	echo git config --global user.email "..."
@@ -136,14 +95,16 @@ if type git >/dev/null 2>&1 ; then
 	fi
 fi
 
-## -- i3 -----------------------------------------------------------------------
+## -- i3 ----------------------------------------------------------------------
 ## Test wheather i3 is running and installed by tying to send an empyt command.
 if i3-msg >/dev/null 2>&1 ; then
 	i3-msg --quiet reload
 fi
 
 
-## -- latexmk ------------------------------------------------------------------
+## -- latexmk -----------------------------------------------------------------
+mkdir -p ~/.config/latexmk
+echo >~/.config/latexmk/latexmkrc
 for prog in \
 	zathura \
 	okular \
@@ -153,13 +114,28 @@ for prog in \
 	acroread
 do
 	if type "$prog" >/dev/null 2>&1 ; then
-		echo "\$pdf_previewer = \"$prog %S\";" >>~/.latexmkrc
+		echo "\$pdf_previewer = \"$prog %S\";" >>~/.config/latexmk/latexmkrc
 		break
 	fi
 done
 
 
-## -- termcap ------------------------------------------------------------------
+## -- termcap -----------------------------------------------------------------
 if type tic >/dev/null 2>&1 ; then
-	tic "$DOT_DIR/share/rxvt-unicode-256color"
+	for f in "$DOT_DIR/share/terminfo/"* ; do
+		tic "$f"
+	done
 fi
+
+## -- dex (autostart) ---------------------------------------------------------
+for f in \
+	thunderbird \
+	org.keepassxc.KeePassXC
+do
+	SRC="/usr/share/applications/$f.desktop"
+	DST=".config/autostart/$f.desktop"
+	
+	if [ -e "$SRC" ] ; then
+		newLink "$SRC" "$DST"
+	fi
+done
