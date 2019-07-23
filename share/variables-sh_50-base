@@ -92,6 +92,7 @@ export NODE_PATH="$HOME/.cache/node/lib/node_modules"
 export GOPATH="$HOME/.cache/go"
 export PYTHONUSERBASE="$HOME/.cache/python"
 export MANPATH="/opt/texlive/2017/texmf-dist/doc/man:$HOME/.cache/node/share/man:$MANPATH"
+export ANSIBLE_CONFIG="$HOME/.config/ansible/ansible.cfg"
 
 if type ruby >/dev/null 2>&1 ; then
 	export PATH="$(ruby -rubygems -e 'puts Gem.user_dir')/bin:$PATH"
