@@ -28,7 +28,7 @@ for term in \
 	guake \
 	tilda
 do
-	if type -t "$term" >/dev/null ; then
+	if type "$term" >/dev/null 2>&1 ; then
 		exec "$term" "$@"
 	fi
 done

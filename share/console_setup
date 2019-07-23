@@ -88,22 +88,19 @@ do
 	. "$f"
 done
 
-for f in \
-	"/etc/profile.d/vte.sh" \
-	"/etc/profile.d/vte-"*".sh"
-do
-	if [ -f "$f" ] ; then
-		. "$f"
-		break
-	fi
-done
+vte_sh="$(find /etc/profile.d -name 'vte.sh' -o -name 'vte-*.sh' -print -quit)"
+if [ -n "$vte_sh" ] ; then
+	source "$f"
+fi
 
 ## Allow Ctrl + S for vim
 stty -ixon
 
 case "$S_ACT_SHELL" in
 	"bash")
-		eval "$(direnv hook bash)"
+		if type direnv >/dev/null 2>&1 ; then
+			eval "$(direnv hook bash)"
+		fi
 		
 		# check the window size after each command and, if necessary,
 		# update the values of LINES and COLUMNS.
@@ -115,7 +112,9 @@ case "$S_ACT_SHELL" in
 		;;
 	
 	"zsh")
-		eval "$(direnv hook zsh)"
+		if type direnv >/dev/null 2>&1 ; then
+			eval "$(direnv hook zsh)"
+		fi
 		
 		## khome = Home   kcuu1 = Up      kpp = Page Up
 		## kend  = End    kcud1 = Down    knp = Page Down
