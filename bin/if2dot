@@ -1,0 +1,372 @@
+#!/usr/bin/env python3
+
+import subprocess
+import json
+import colorsys
+import argparse
+import io
+
+
+
+def run(*args):
+	return subprocess.run(args, check=True, stdout=subprocess.PIPE).stdout.decode('utf-8')
+
+
+def run_json(*args):
+	return json.loads(run(*args))
+
+
+def run_ip(pid, *args):
+	data = run_json('nsenter', '-t', str(pid), '-n', 'ip', '-j', '-p', '-d', *args)
+	return {x['ifindex']: x for x in data}
+
+
+def collect_raw_data():
+	## Does not find persistent network namespaces without a running process
+	raw_namespaces = run_json('lsns', '-J', '-t', 'net')['namespaces']
+	
+	for ns in raw_namespaces:
+		lnks = run_ip(ns['pid'], 'link')
+		adrs = run_ip(ns['pid'], 'address')
+		
+		if lnks.keys() != adrs.keys():
+			raise Exception('{} vs {}'.format(lnks.keys(), adrs.keys()))
+		
+		for k, v in lnks.items():
+			v.update(adrs[k])
+		ns['interfaces'] = lnks
+		
+		ns['namespaces'] = run_json('nsenter', '-t', str(ns['pid']), '-n', 'lsns', '-J', '-t', 'net')['namespaces']
+		ns['hostname'] = run('nsenter', '-t', str(ns['pid']), '-u', 'hostname', '-f').strip()
+	
+	return raw_namespaces
+
+
+class Interface:
+	def __init__(self, index, name):
+		self.namespace = None
+		self.index = index
+		self.name = name
+		self.up = False
+		self.kind = ''
+		self.adrs = []
+	
+	@property
+	def uid(self):
+		return '{}_{}'.format(self.namespace.uid, abs(hash(self.name)))
+
+
+
+class Link:
+	def __init__(self, src, dst, kind, data):
+		self.host = None
+		self.src = src
+		self.dst = dst
+		self.kind = kind
+		self.bidirectional = False
+		self.data = data
+
+
+class Namespace:
+	def __init__(self, unsid, pid):
+		self.host = None
+		self.unsid = unsid
+		self.pid = pid
+		self.hostname = ''
+		self.ns_unsid_by_nsid = {}
+		self._if_by_index = {}
+		self._if_by_name = {}
+	
+	@property
+	def uid(self):
+		return 'cluster_{}'.format(self.unsid)
+	
+	## Namespace
+	def ns_by_nsid(self, nsid):
+		return self.host.ns_by_unsid(self.ns_unsid_by_nsid[str(nsid)])
+	
+	## Interface
+	def add_interface(self, interface):
+		interface.namespace = self
+		self._if_by_index[interface.index] = interface
+		self._if_by_name[interface.name] = interface
+	
+	def if_by_index(self, index):
+		return self._if_by_index[index]
+	
+	def if_by_name(self, name):
+		return self._if_by_name[name]
+	
+	@property
+	def ifs(self):
+		return self._if_by_index.values()
+
+
+class Host:
+	def __init__(self):
+		self._ns_by_unsid = {}
+		self._ns_by_pid = {}
+		self.links = []
+	
+	## Namespaces
+	def add_ns(self, ns):
+		ns.host = self
+		self._ns_by_unsid[ns.unsid] = ns
+		self._ns_by_pid[ns.pid] = ns
+	
+	def ns_by_unsid(self, unsid):
+		return self._ns_by_unsid[unsid]
+	
+	def ns_by_pid(self, pid):
+		return self._ns_by_pid[pid]
+	
+	@property
+	def nss(self):
+		return self._ns_by_unsid.values()
+	
+	## Links
+	def add_link(self, link):
+		for l in self.links:
+			if l.src == link.dst and l.dst == link.src:
+				l.bidirectional = True
+				return
+		
+		link.host = self
+		self.links.append(link)
+
+
+def ms_link(raw_if):
+	data = {}
+	return data
+
+
+def link_link(raw_if):
+	data = {}
+	
+	if raw_if['linkinfo']['info_kind'] == 'vlan':
+		data['vlan_id'] = raw_if['linkinfo']['info_data']['id']
+		data['msg'] = 'Tag {}'.format(raw_if['linkinfo']['info_data']['id'])
+	
+	return data
+
+
+def simplify_data(raw_namespaces):
+	host = Host()
+	
+	for raw_ns in raw_namespaces:
+		ns = Namespace(raw_ns['ns'], raw_ns['pid'])
+		host.add_ns(ns)
+		for raw_if in raw_ns['interfaces'].values():
+			ns.add_interface(Interface(raw_if['ifindex'], raw_if['ifname']))
+		
+		for raw_ns2 in raw_ns['namespaces']:
+			if raw_ns2['netnsid'] != 'unassigned':
+				ns.ns_unsid_by_nsid[raw_ns2['netnsid']] = raw_ns2['ns']
+	
+	for raw_ns in raw_namespaces:
+		ns = host.ns_by_pid(raw_ns['pid'])
+		ns.hostname = raw_ns['hostname']
+		
+		for raw_if in raw_ns['interfaces'].values():
+			i = ns.if_by_index(raw_if['ifindex'])
+			
+			i.kind = raw_if['link_type']
+			
+			if raw_if['operstate'] == 'DOWN':
+				i.up = False
+			elif raw_if['operstate'] == 'UP' or raw_if['operstate'] == 'UNKNOWN':
+				i.up = True
+			else:
+				raise Exception('Unknown operation state "{}" for {}'.format(raw_if['operstate'], i['id']))
+			
+			if 'address' in raw_if:
+				i.adrs.append(raw_if['address'])
+			
+			if 'BROADCAST' in raw_if['flags']:
+				i.adrs.append(raw_if['broadcast'])
+			for adr in raw_if['addr_info']:
+				i.adrs.append('{}/{}'.format(adr['local'], adr['prefixlen']))
+			
+			## Master/Slave relation (always same NS)
+			if 'master' in raw_if:
+				host.add_link(Link(
+					i,
+					ns.if_by_name(raw_if['master']),
+					raw_if['linkinfo']['info_slave_kind'],
+					ms_link(raw_if)
+				))
+			
+			## Link relation within the same NS
+			if 'link' in raw_if:
+				if raw_if['link'] is not None: 
+					host.add_link(Link(
+						i,
+						ns.if_by_name(raw_if['link']),
+						raw_if['linkinfo']['info_kind'],
+						link_link(raw_if)
+					))
+			
+			## Link relation in different NS
+			elif 'link_index' in raw_if and 'link_netnsid' in raw_if:
+				host.add_link(Link(
+					i,
+					ns.ns_by_nsid(raw_if['link_netnsid']).if_by_index(raw_if['link_index']),
+					raw_if['linkinfo']['info_kind'],
+					link_link(raw_if)
+				))
+	
+	return host
+
+
+def colors(n, s=1.0, v=1.0):
+	l = []
+	for i in range(n):
+		tup_f = colorsys.hsv_to_rgb(i*1.0/n, s, v)
+		tup_i = map(lambda x: int(x*255), tup_f)
+		l.append('#{:02x}{:02x}{:02x}'.format(*tup_i))
+	return l
+
+
+def find_color(needle, keys, colors):
+	for idx, key in enumerate(keys):
+		if key == needle:
+			return colors[idx]
+	return colors[0]
+
+
+## https://www.graphviz.org/doc/info/shapes.html
+## https://www.graphviz.org/doc/info/attrs.html
+def create_dot(host, f):
+	if_kinds = ['unknown', 'ether', 'sit', 'loopback', 'ppp', 'none']
+	if_colors = colors(len(if_kinds), 0.2)
+	if_used = set()
+	
+	link_kinds = ['unknown', 'bridge', 'vlan', 'veth', 'tun']
+	link_colors = colors(len(link_kinds), 1, 0.8)
+	link_used = set()
+	
+	f.write('digraph G {\n')
+	f.write('\tedge [penwidth=3];\n')
+	f.write('\trankdir=TB;\n')
+	f.write('\tsubgraph cluster_host {\n')
+	f.write('\t\tstyle = "filled";\n')
+	f.write('\t\tfillcolor = "#d2e7a4";\n')
+	f.write('\t\tlabel = "Host";\n')
+	for ns in host.nss:
+		f.write('\t\tsubgraph {0.uid} {{\n'.format(ns))
+		f.write('\t\t\tlabel = "{0.hostname} ({0.pid})";\n'.format(ns))
+		f.write('\t\t\tstyle = "filled";\n')
+		f.write('\t\t\tfillcolor = "#dedede";\n')
+		for i in ns.ifs:
+			f.write('\t\t\t{0.uid} [\n'.format(i))
+			f.write('\t\t\t\tshape=box\n;')
+			f.write('\t\t\t\tfontname="Droid Sans Mono Slashed"\n;')
+			f.write('\t\t\t\tfontsize="8"\n;')
+			if i.up:
+				f.write('\t\t\t\tstyle = "filled";\n');
+			else:
+				f.write('\t\t\t\tstyle = "filled,dashed";\n');
+			f.write('\t\t\t\tfillcolor="{}";\n'.format(find_color(i.kind, if_kinds, if_colors)))
+			if_used.add(i.kind)
+			
+			f.write('\t\t\t\tlabel = <\n')
+			f.write('\t\t\t\t\t<table border="0" cellborder="0" cellspacing="1">\n')
+			f.write('\t\t\t\t\t\t<tr><td align="center"><b>{0.name}</b> ({0.index})</td></tr>\n'.format(i))
+			for adr in i.adrs:
+				f.write('\t\t\t\t\t\t<tr><td align="left">{}</td></tr>\n'.format(adr))
+			f.write('\t\t\t\t\t</table>\n')
+			f.write('\t\t\t\t>;\n')
+			
+			f.write('\t\t\t];\n')
+		f.write('\t\t}\n')
+		
+	f.write('\t}\n')
+
+	
+	for link in host.links:
+		style = []
+		style.append('dir="both"' if link.bidirectional else 'dir="forward"')
+		
+		if 'msg' in link.data:
+			style.append('label="{}"'.format(link.data['msg']))
+		
+		style.append('color="{}"'.format(find_color(link.kind, link_kinds, link_colors)))
+		link_used.add(link.kind)
+		
+		f.write('\t{dst.uid} -> {src.uid} [{style}];\n'.format(src=link.src, dst=link.dst, style=' '.join(style)))
+	
+	f.write('\tsubgraph cluster_legend {\n')
+	f.write('\t\tlabel = "Legend";\n')
+	
+	## Interfaces
+	f.write('\t\tlegend_if [shape=plain label=<\n')
+	f.write('\t\t\t<table border="0" cellspacing="8pt">\n')
+	for kind in sorted(if_used):
+		f.write('\t\t\t\t<tr><td border="1" bgcolor="{color}" width="20pt"></td><td align="left">{kind}</td></tr>\n'.format(
+			kind=kind, color=find_color(kind, if_kinds, if_colors)
+		))
+	f.write('\t\t\t</table>\n')
+	f.write('\t\t>]\n')
+	
+	## Links
+	f.write('\t\tlegend_link [shape=plain label=<\n')
+	f.write('\t\t\t<table border="0" cellspacing="8pt">\n')
+	for kind in sorted(link_used):
+		f.write('\t\t\t\t<tr><td border="1" bgcolor="{color}" width="20pt"></td><td align="left">{kind}</td></tr>\n'.format(
+			kind=kind, color=find_color(kind, link_kinds, link_colors)
+		))
+	f.write('\t\t\t</table>\n')
+	f.write('\t\t>]\n')
+	
+	## Up/Down
+	f.write('\t\t{\n')
+	f.write('\t\t\tnode [shape=box];\n')
+	f.write('\t\t\tlegend_up_true  [label="Up" style=""]\n')
+	f.write('\t\t\tlegend_up_false [label="Down" style="dashed"]\n')
+	f.write('\t\t}\n')
+	f.write('\t}\n')
+	
+	f.write('}\n')
+
+
+def main():
+	formats = ['png', 'jpeg', 'svg', 'pdf', 'ps', 'dot']
+	parser = argparse.ArgumentParser(description='Create graph of network namespaces, interfaces and their links.')
+	parser.add_argument('-o', '--out')
+	parser.add_argument('-f', '--format', choices=formats, default='png')
+	parser.add_argument('-l', '--load')
+	parser.add_argument('-s', '--save')
+	
+	args = parser.parse_args()
+	if args.out is None and args.save is None:
+		parser.print_usage()
+	
+	## Aquire raw data
+	if args.load is None:
+		raw_namespaces = collect_raw_data()
+	else:
+		with open(args.load) as f:
+			raw_namespaces = json.load(f)
+	
+	## Maybe save raw data
+	if args.save is not None:
+		with open(args.save, 'w') as f:
+			json.dump(raw_namespaces, f, indent='\t')
+	
+	if args.out is not None:
+		## Parse data
+		host = simplify_data(raw_namespaces)
+		
+		## Write graph
+		dot = io.StringIO()
+		create_dot(host, dot)
+		
+		with open(args.out, 'w') as f:
+			if args.format == 'dot':
+				f.write(dot.getvalue())
+			else:
+				subprocess.run(['dot', '-T', args.format], check=True, stdout=f, input=dot.getvalue().encode('utf-8'))
+
+
+if __name__ == "__main__":
+	main()
