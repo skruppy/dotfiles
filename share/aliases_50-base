@@ -41,12 +41,18 @@ alias d="colordiff -r"
 
 #### New commands : Misc
 bn() { test "$#" -eq 1 && b "$1" && nano "$1" ; }
+if type exa >/dev/null 2>&1 ; then
+	alias exa="exa --color=always" ## Needed here for correct type-test results.
+	alias ll="exa -l --color-scale --group-directories-first -b -h -H  --git -@"
+	alias la="ll -a"
+else
+	alias ll="ls -lv --human-readable --group-directories-first"
+	alias la="ll --almost-all"
+fi
 
 alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."
-alias ll="ls -lv --human-readable --group-directories-first"
-alias la="ll --almost-all"
 alias gr="grep -Rn"
 alias gri="grep -Rin"
 alias rmrf="rm -rfvI"
