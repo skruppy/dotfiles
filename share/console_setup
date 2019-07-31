@@ -74,7 +74,7 @@ if [ -z "$DOT_DIR" ] ; then
 			;;
 	esac
 	
-	if [ "$(tty)" = "/dev/ttyS0" ] ; then
+	if [ "$(tty || true)" = "/dev/ttyS0" ] ; then
 		resize
 	fi
 fi
@@ -94,7 +94,7 @@ if [ -n "$vte_sh" ] ; then
 fi
 
 ## Allow Ctrl + S for vim
-stty -ixon
+stty -ixon 2>/dev/null || true
 
 case "$S_ACT_SHELL" in
 	"bash")
