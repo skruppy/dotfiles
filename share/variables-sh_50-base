@@ -97,6 +97,6 @@ export MANPATH="/opt/texlive/2017/texmf-dist/doc/man:$HOME/.cache/node/share/man
 export ANSIBLE_CONFIG="$HOME/.config/ansible/ansible.cfg"
 
 if type ruby >/dev/null 2>&1 ; then
-	export PATH="$(ruby -rubygems -e 'puts Gem.user_dir')/bin:$PATH"
+	export PATH="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin:$PATH"
 fi
 export PATH="$DOT_DIR/bin:$GOPATH/bin:$HOME/.cache/node/bin:$HOME/.cache/python/bin:$PATH:$DOT_DIR/bin-fallback"
