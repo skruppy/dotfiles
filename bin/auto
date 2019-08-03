@@ -38,9 +38,10 @@ printUsage() {
 
 
 template() {
-	TEXT="$(echo "$1" | sed -e "s#'#'\"'\"'#g;s#\$\([[:digit:]]*\)#'\"\$\1\"'#g")"
+	## ...'... -> ...'"'"'... / ...$123... -> ...'"$123"'...
+	TEXT="$(printf '%s' "$1" | sed -e "s#'#'\"'\"'#g;s#\$\([1-9][[:digit:]]*\)#'\"\$\1\"'#g")"
 	shift
-	echo "$(eval "echo '$TEXT'")"
+	printf '%s' "$(eval "printf '%s' '$TEXT'")"
 }
 
 
