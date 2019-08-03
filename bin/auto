@@ -23,6 +23,7 @@ printUsage() {
 	echo "  -c       --change      Execute CMD only on FILE changes, not with the the start of $(basename "$0")" >&2
 	echo "  -b       --bell        Ring the bell in the shell, after each iteration" >&2
 	echo "  -e       --error-bell  Ring the bell in the shell, when CMD failed" >&2
+	echo "  -C       --clear       Clear screen before each run" >&2
 	echo "  -h       --help        Display this message" >&2
 	echo "" >&2
 	echo "EXAMPLE" >&2
@@ -49,6 +50,7 @@ STOP=false
 CHANGE=false
 BELL=false
 ERROR_BELL=false
+CLEAN=false
 
 while [ "$#" -gt 0 ] ; do
 	case "$1" in
@@ -71,6 +73,10 @@ while [ "$#" -gt 0 ] ; do
 		;;
 		"-e"|"--error-bell")
 			ERROR_BELL=true
+			shift
+		;;
+		"-C"|"--clear")
+			CLEAN=true
 			shift
 		;;
 		"-h"|"--help")
@@ -125,7 +131,11 @@ while ! $CHANGE || inotifywait \
 	--quiet --quiet \
 	"${FILES[@]}"
 do
-	echo ""
+	if $CLEAN ; then
+		clear
+	else
+		echo ""
+	fi
 	log "starting"
 	
 	returncode=0
