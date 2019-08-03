@@ -89,8 +89,8 @@ do
 done
 
 vte_sh="$(find /etc/profile.d -name 'vte.sh' -o -name 'vte-*.sh' -print -quit)"
-if [ -n "$vte_sh" ] ; then
-	source "$f"
+if [ -e "$vte_sh" ] ; then
+	source "$vte_sh"
 fi
 
 ## Allow Ctrl + S for vim
