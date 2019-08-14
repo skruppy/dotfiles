@@ -43,7 +43,7 @@ alias d="colordiff -r"
 bn() { test "$#" -eq 1 && b "$1" && nano "$1" ; }
 if type exa >/dev/null 2>&1 ; then
 	alias exa="exa --color=always" ## Needed here for correct type-test results.
-	alias ll="exa -l --color-scale --group-directories-first -b -h -H  --git -@"
+	alias ll="exa -l --color-scale --group-directories-first -b -h -H  --git"
 	alias la="ll -a"
 else
 	alias ll="ls -lv --human-readable --group-directories-first"
