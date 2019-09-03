@@ -1,0 +1,35 @@
+#!/bin/sh
+
+printUsage() {
+	if [ "$#" -ne 0 ] ; then
+		echo "$(basename "$0"): $@" >&2
+	fi
+	
+	cat <<EOF
+Usage: hostname hostname        set hostname
+       hostname [-d|-f|-s]      display formatted name
+
+       hostname -h|--help       print info and exit
+
+    /!\\ THIS IS A FALLBACK IMPLEMENTATION /!\\
+
+    -s, --short           short host name
+    -f, --fqdn, --long    long host name (FQDN)
+    -d, --domain          DNS domain name
+
+   This command can read or set the hostname. You can also read the DNS domain
+   or the FQDN (fully qualified domain name).
+EOF
+	
+	test "$#" -eq 0
+	exit "$?"
+}
+
+case "${1:--f}" in
+	-s|--short)       cut -d. -f 1 /proc/sys/kernel/hostname ;;
+	-f|--fqdn|--long) cat /proc/sys/kernel/hostname ;;
+	-d|--domain)      cut -d. -f 2- /proc/sys/kernel/hostname ;;
+	-h|--help)        printUsage ;;
+	-*)               printUsage "invalid option -- '$1'" ;;
+	*)                echo "$1" >/proc/sys/kernel/hostname ;;
+esac
