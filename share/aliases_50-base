@@ -25,6 +25,7 @@ alias emerge="emerge -aA --autounmask-continue"
 alias man="LESS_TERMCAP_md=$'\E[38;5;82m\E[1m' LESS_TERMCAP_md=$'\E[38;5;220m\E[1m' GROFF_NO_SGR=1 man"
 alias diff="diff -u"
 alias colordiff="colordiff -u"
+alias sift="sift --git -n"
 test -n "$SSH_CONNECTION" && alias sudo="sudo SSH_CONNECTION='$SSH_CONNECTION'"
 
 
