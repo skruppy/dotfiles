@@ -95,8 +95,9 @@ export GOPATH="$HOME/.cache/go"
 export PYTHONUSERBASE="$HOME/.cache/python"
 export MANPATH="/opt/texlive/2017/texmf-dist/doc/man:$HOME/.cache/node/share/man:$MANPATH"
 export ANSIBLE_CONFIG="$HOME/.config/ansible/ansible.cfg"
+export CARGO_INSTALL_ROOT="$HOME/.cache/cargo"
 
 if type ruby >/dev/null 2>&1 ; then
 	export PATH="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin:$PATH"
 fi
-export PATH="$DOT_DIR/bin:$GOPATH/bin:$HOME/.cache/node/bin:$HOME/.cache/python/bin:$PATH:$DOT_DIR/bin-fallback"
+export PATH="$DOT_DIR/bin:$GOPATH/bin:$HOME/.cache/node/bin:$HOME/.cache/python/bin:$PATH:$HOME/.cache/cargo/bin:$DOT_DIR/bin-fallback"
